@@ -1099,10 +1099,11 @@ whil:
 			newpwd = NULL;
 		}
 		if(!strncmp(buf, "room", 4)){
-			int num = -1;
+			int num = -2;
 			FILE* file = NULL;
 			int opt = 0;
-			optind = 0;
+			optind = 1;
+			optarg = NULL;
 			while((opt = getopt(argc, argv, "n:f:")) != -1) {
 				switch (opt){
 					case 'n':
@@ -1119,9 +1120,9 @@ whil:
 						break;
 				}
 			}
-			if(num != -1){
+			if(num > -1){
 				create_room(tb, md, num, file);
-			}else{
+			}else if(num == -1){
 				for(int num = 0; num < COUNT_OF_ROOM; num++){
 					create_room(tb, md, num, NULL);
 				}
@@ -1130,7 +1131,8 @@ whil:
 		if(!strncmp(buf, "kill", 4)){
 			int num = -2;
 			int opt = 0;
-			optind = 0;
+			optind = 1;
+			optarg = NULL;
 			while((opt = getopt(argc, argv, "n:")) != -1) {
 				switch (opt){
 					case 'n':
@@ -1174,7 +1176,8 @@ whil:
 			int opt = 0;
 			bool flag = true;
 			char* str = NULL;
-			optind = 0;
+			optind = 1;
+			optarg = NULL;
 			bool flag_log_stat = false;
 			while((opt = getopt(argc, argv, "n:f:s")) != -1) {
 				switch (opt){
@@ -1207,7 +1210,8 @@ whil:
 		if(!strncmp(buf, "delroom", 7)){
 			int num = -2;
 			int opt = 0;
-			optind = 0;
+			optind = 1;
+			optarg = NULL;
 			while((opt = getopt(argc, argv, "n:")) != -1) {
 				switch (opt){
 					case 'n':
@@ -1265,11 +1269,16 @@ out:
 	pthread_exit(NULL);
 }
 
-int main(){
+int main(int argc, char** argv){
 	int md = msgget(IPC_PRIVATE, IPC_CREAT|IPC_EXCL|0666);
+	if(md == -1){
+		perror("msgget in main");
+		return 1;
+	}
 	int sd = shm_open("my_shared_memory", O_CREAT|O_RDWR, 0666);
 
-	if(sd < 0){
+	if(sd == -1){
+		perror("shm_open");
 		return 1;
 	}
 
@@ -1309,14 +1318,14 @@ int main(){
 		return start_server(3425, "127.0.0.1", md, tb);
 	}
 
-	void* argv = (struct get_comand_server_argumets_t*)malloc(sizeof(struct get_comand_server_argumets_t));
-	((struct get_comand_server_argumets_t*)argv)->md = md;
-	((struct get_comand_server_argumets_t*)argv)->tb = tb;
+	void* argv_for_send = (struct get_comand_server_argumets_t*)malloc(sizeof(struct get_comand_server_argumets_t));
+	((struct get_comand_server_argumets_t*)argv_for_send)->md = md;
+	((struct get_comand_server_argumets_t*)argv_for_send)->tb = tb;
 	const char pwd[] = "->";
-	((struct get_comand_server_argumets_t*)argv)->pwd = pwd;
+	((struct get_comand_server_argumets_t*)argv_for_send)->pwd = pwd;
 
 	pthread_t thread = 0;
-	pthread_create(&(thread), NULL, get_comand_server, (void*)argv);
+	pthread_create(&(thread), NULL, get_comand_server, (void*)argv_for_send);
 	pthread_join(thread, NULL);
 
 	kill(pid_server, SIGKILL);

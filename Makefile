@@ -38,7 +38,7 @@ server:
 	mkdir -p bin/log 
 	g++ -c server/display.cpp -o server/display.o
 	ar -r server/libdisplay.a server/display.o
-	g++ server/server.cpp -o bin/server -lrt -pthread server/libdisplay.a -lSDL -lSDL_ttf -lpthread -lreadline
+	g++ server/server.cpp -o bin/server -pthread server/libdisplay.a -lSDL -lSDL_ttf -lpthread -lreadline
 
 starter:
 	mkdir -p bin 

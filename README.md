@@ -5,7 +5,7 @@ This project is poker-server with GUI for simple clients and 4 types of bot.
 ## Installation
 ### Firstly clone repository
 ```
-git clone https://github.com/andriygav3/project.git
+git clone https://github.com/andriygav/PokerRoom.git
 ```
 ### What libs you nead to have:
 ```

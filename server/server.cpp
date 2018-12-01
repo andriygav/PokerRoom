@@ -570,6 +570,7 @@ int create_room(struct table_t* tb, int md, int num, FILE* file){
 			tb->cl[num].PokMesDis = msgget(IPC_PRIVATE, IPC_CREAT|IPC_EXCL|0666);
 			if(tb->cl[num].PokMesDis == -1){
 				perror("msgget");
+				pthread_mutex_unlock(&(tb->mut_read_client));
 				return 1;
 			}
 			struct poker_argumets_t* argv = (struct poker_argumets_t*)malloc(sizeof(struct poker_argumets_t));
@@ -1268,10 +1269,15 @@ int main(){
 	int md = msgget(IPC_PRIVATE, IPC_CREAT|IPC_EXCL|0666);
 	int sd = shm_open("my_shared_memory", O_CREAT|O_RDWR, 0666);
 
+	if(sd < 0){
+		return 1;
+	}
+
 	int pid_server = -1;
 	if(ftruncate(sd, sizeof(struct table_t)) != 0){
 		perror("ftruncate");
-		return 0;
+		shm_unlink("my_shared_memory");
+		return 1;
 	}
 
 	struct table_t* tb = (struct table_t*)mmap(NULL, sizeof(struct table_t), PROT_WRITE|PROT_READ, MAP_SHARED, sd, 0);
@@ -1317,7 +1323,8 @@ int main(){
 	int status = 0;
 	if(pid_server != -1)
 		wait(&status);
-	pthread_mutex_destroy(&(tb->mut_read_client));
+	pthread_mutex_destroy(&(tb->mut_read_client));\
+
 	shm_unlink("my_shared_memory");
 	return 0;
 }

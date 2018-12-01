@@ -1,0 +1,53 @@
+##&&Poker Room Help
+
+##&Menu Help
+#If you want move to game please press "game". If you press "game" and game don't start - check server.
+
+#If you want exit from game please press "exit".
+
+#For help in game  press "help".
+
+##&Help Help
+#If you want exit from game please press "exit".
+
+#You always can come back to menu - press "menu".
+
+##&Game Help
+#If you want exit from game please press "exit".
+
+#For help in game  press "help".
+
+#You always can come back to menu - press "menu".
+
+#You can disconnect from poker room - press "disconnect".
+
+##&In Game
+#Your money is written under your cards
+
+#Your bet is written under your cards in the scope.
+
+#Table bank is written under table cards.
+
+#Curent bet is written over table cards.
+
+#Curent active player is highlighted in red color.
+
+#&In Game you can do three action:
+1. Call - your bet become equal to table bet, if you have any cash - you in "all in".
+
+2. Raise - you Raise table bet to "x" money - this money you can see in green array.
+
+3. Fold - you throw off your card.
+
+#&After game:
+1. All cards open.
+
+2. Cash devided between people according to their place according to the rules of Texas Holdem.
+
+3. You can start new game - press "new game".
+
+4. You can get your money (If the amount of your money is more than the initial).
+
+5. YOu can put money to server.
+
+6. The winner is highlighted in green color.

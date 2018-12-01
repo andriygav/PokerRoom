@@ -1,4 +1,4 @@
-.PHONY: bot4 bot3 bot2 bot1 client server starter
+.PHONY: bot4 bot3 bot2 bot1 client server starter clear
 
 bot1:
 	mkdir -p bin 
@@ -60,4 +60,3 @@ client:
 	g++ -c client/slide.cpp -o client/slide.o
 	ar -r client/libslide.a client/slide.o
 	g++ client/poker_client.cpp -o bin/client client/libclient.a client/libmenu.a client/libhelp.a client/libgame.a client/libslide.a client/libbutton.a -lSDL -lSDL_ttf -lpthread
-

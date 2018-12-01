@@ -17,7 +17,7 @@ sudo apt-get install libreadline-dev
 ##### For MacOS Mojava
 ```
 brew install sdl
-
+brew install sdl_ttf
 ```
 
 ### To compile all bin:

@@ -8,14 +8,14 @@ This project is poker-server with GUI for simple clients and 4 types of bot.
 git clone https://github.com/andriygav/PokerRoom.git
 ```
 ### What libs you nead to have:
+##### For Linux Mint17
 ```
-For Linux Mint17
 sudo apt-get install libsdl1.2-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev
 sudo apt-get install libreadline-dev
 ```
 
+##### For MacOS Mojava
 ```
-For MacOS Mojava
 brew install sdl
 
 ```

@@ -1,18 +1,18 @@
 .PHONY: bot4 bot3 bot2 bot1 client server starter
 
 bot1:
-	mkdir bin -p
-	mkdir bin/log -p
+	mkdir -p bin 
+	mkdir -p bin/log 
 	g++ bot1/bot_client.cpp -o bin/bot1_client -pthread
 bot2:
-	mkdir bin -p
-	mkdir bin/log -p
+	mkdir -p bin 
+	mkdir -p bin/log 
 	g++ bot2/bot_client.cpp -o bin/bot2_client -pthread
 
 bot3:
-	mkdir bin -p
-	mkdir bin/log -p
-	mkdir bin/Bot3 -p
+	mkdir -p bin 
+	mkdir -p bin/log 
+	mkdir -p bin/Bot3 
 	g++ -c bot3/neyron/web.cpp -o bot3/neyron/web.o
 	ar -r bot3/neyron/libweb.a bot3/neyron/web.o
 	g++ -c bot3/neyron/neyron.cpp -o bot3/neyron/neyron.o
@@ -22,9 +22,9 @@ bot3:
 	g++ bot3/bot_client.cpp -o bin/bot3_client -pthread bot3/libneybot.a bot3/neyron/libweb.a bot3/neyron/libneyron.a  -lm
 
 bot4:
-	mkdir bin -p
-	mkdir bin/log -p
-	mkdir bin/Bot4 -p
+	mkdir -p bin 
+	mkdir -p bin/log 
+	mkdir -p bin/Bot4 
 	g++ -c bot4/neyron/web.cpp -o bot4/neyron/web.o
 	ar -r bot4/neyron/libweb.a bot4/neyron/web.o
 	g++ -c bot4/neyron/neyron.cpp -o bot4/neyron/neyron.o
@@ -34,19 +34,19 @@ bot4:
 	g++ bot4/bot_client.cpp -o bin/bot4_client -pthread bot4/libneybot.a bot4/neyron/libweb.a bot4/neyron/libneyron.a  -lm
 
 server: 
-	mkdir bin -p
-	mkdir bin/log -p
+	mkdir -p bin 
+	mkdir -p bin/log 
 	g++ -c server/display.cpp -o server/display.o
 	ar -r server/libdisplay.a server/display.o
 	g++ server/server.cpp -o bin/server -lrt -pthread server/libdisplay.a -lSDL -lSDL_ttf -lpthread -lreadline
 
 starter:
-	mkdir bin -p
+	mkdir -p bin 
 	g++ creator/starter.cpp -o bin/starter
 
 client: 
-	mkdir bin -p
-	mkdir bin/log -p
+	mkdir -p bin 
+	mkdir -p bin/log 
 	g++ -c client/client.cpp -o client/client.o
 	ar -r client/libclient.a client/client.o
 	g++ -c client/menu.cpp -o client/menu.o

@@ -8,4 +8,4 @@ add_library(Clientlib
 target_include_directories (Displaylib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(client poker_client.cpp)
-target_link_libraries (client LINK_PUBLIC Clientlib Threads::Threads ${SDL_LIBRARY} ${SDL_TTF_LIBRARIES})
+target_link_libraries (client LINK_PUBLIC Clientlib Threads::Threads ${SDL_LIBRARY} ${SDL_TTF_LIBRARIES} readline)

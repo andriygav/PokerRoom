@@ -5,7 +5,6 @@ add_library(Clientlib
         game.cpp
         button.cpp
         slide.cpp)
-target_include_directories (Displaylib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(client poker_client.cpp)
-target_link_libraries (client LINK_PUBLIC Clientlib Threads::Threads ${SDL_LIBRARY} ${SDL_TTF_LIBRARIES} readline)
+target_link_libraries (client Clientlib Threads::Threads ${SDL_LIBRARY} ${SDL_TTF_LIBRARIES} readline)

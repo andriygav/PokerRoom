@@ -28,6 +28,14 @@
 
 #include "client.h"
 
+static const char* __DiscriptionOfTheCard[54] = {(const char*)"??", (const char*)"S2", (const char*)"S3", (const char*)"S4", (const char*)"S5", (const char*)"S6", (const char*)"S7", (const char*)"S8", (const char*)"S9", (const char*)"S10", (const char*)"SJ", 
+								   (const char*)"SQ", (const char*)"SK", (const char*)"SA", (const char*)"H2", (const char*)"H3", (const char*)"H4", (const char*)"H5", (const char*)"H6", (const char*)"H7", (const char*)"H8", 
+								   (const char*)"H9", (const char*)"H10", (const char*)"HJ", (const char*)"HQ", (const char*)"HK", (const char*)"HA", (const char*)"C2", (const char*)"C3", (const char*)"C4", (const char*)"C5",
+								   (const char*)"C6", (const char*)"C7", (const char*)"C8", (const char*)"C9", (const char*)"C10", (const char*)"CJ", (const char*)"CQ", (const char*)"CK", (const char*)"CA", (const char*)"D2",
+								   (const char*)"D3", (const char*)"D4", (const char*)"D5", (const char*)"D6", (const char*)"D7", (const char*)"D8", (const char*)"D9", (const char*)"D10", (const char*)"DJ", (const char*)"DQ", 
+								   (const char*)"DK", (const char*)"DA", (const char*)"??"};
+
+
 static int log(int md, const char* format, ...){
 	char str[256];
 	va_list args;
@@ -70,18 +78,39 @@ int client_t::cheak_pok_status(int st){
 int client_t::show_all_inf_to_console(){
 	printf("\n--------------------------------------------------\n");
 	printf("\n-----------------------TABLE----------------------\n");
-	printf("bank = %f, curen bet = %f, card = %d %d %d %d %d\n", this->table.bank, this->table.bet, this->table.card[0], this->table.card[1], this->table.card[2], this->table.card[3], this->table.card[4]);
+	printf("bank = %f, curen bet = %f, card = %s %s %s %s %s\n", this->table.bank, this->table.bet, __DiscriptionOfTheCard[this->table.card[0]], __DiscriptionOfTheCard[this->table.card[1]], __DiscriptionOfTheCard[this->table.card[2]], __DiscriptionOfTheCard[this->table.card[3]], __DiscriptionOfTheCard[this->table.card[4]]);
 	for(int i = 0; i<6;i++){
 		printf("%d \t", this->final_table[i]);
 	}
 	printf("\n-----------------------PLAYERS--------------------\n");
-	printf("login\t\tstatus\tcash\t\tbet\tcards\t\tplace\n");
+	printf("login\t\tstatus\tcash\t\tbet\tcards\n");
 	for(int i = 0; i<6;i++){
-		printf("%-8s\t%d\t%-12.1lf\t%.1lf\t%d%'8d\t%d\n", this->player[i].login, this->player[i].status, this->player[i].cash, this->player[i].bet, this->player[i].card[0], this->player[i].card[1], this->final_table[i]);	
+
+		if(this->player[i].card[0] == -1){
+			printf("\x1b[31m");
+		}
+		if(i == this->num){
+			printf("\x1b[35m");
+		}
+		if(this->final_table[i] == 1){
+			printf("\x1b[32m");
+		}
+
+
+		printf("%-8s\t%d\t%-12.1lf\t%.1lf\t", this->player[i].login, this->player[i].status, this->player[i].cash, this->player[i].bet);
+
+		if(this->player[i].card[0] != -1){
+			printf("%s\t", __DiscriptionOfTheCard[this->player[i].card[0]]);
+		}else{
+			printf("FF\t");
+		}
+		if(this->player[i].card[1] != -1){
+			printf("%s\n", __DiscriptionOfTheCard[this->player[i].card[1]]);
+		}else{
+			printf("FF\n");
+		}
+		printf("\x1b[0m");
 	}
-	printf("\n-----------------------MYCARDS--------------------\n");
-	printf("status = %d; %d %d\n", this->player[this->num].status, this->mycard[0], this->mycard[1]);
-	printf("\n--------------------------------------------------\n");
 	return 0;
 }
 

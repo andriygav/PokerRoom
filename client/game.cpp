@@ -20,6 +20,7 @@
 
 #include "game.h"
 
+
 #define COUNT_OF_BUTTON 10
 
 #define MAX_PUT_MONEY 20000

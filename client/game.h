@@ -31,8 +31,6 @@ public:
 	client_t* my;
 
 	SDL_Surface* card_texture[54];
-
-	char* card_discript[54];
 	
 	char buf[256];
 
@@ -61,4 +59,13 @@ struct game_get_info_from_server_argument_t{
 void* game_get_info_from_server(void* arguments);
 void* game_scanf(void* arguments);
 void* game_scene(void* arguments);
+
+
+
+
+
+
+
+
+
 

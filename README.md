@@ -12,24 +12,21 @@ git clone https://github.com/andriygav/PokerRoom.git
 ```
 sudo apt-get install libsdl1.2-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev
 sudo apt-get install libreadline-dev
+sudo apt-get install cmake
 ```
 
 ##### For MacOS Mojava
 ```
 brew install sdl
 brew install sdl_ttf
+brew install cmake
 ```
 
 ### To compile all bin:
 
 ```
-make server
-make client
-make starter
-make bot1
-make bot2
-make bot3
-make bot4
+cmake ./
+make
 ```
 all bin-files are in folder 'bin', and to "launching all bin you should do only in 'bin'".
 

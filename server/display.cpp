@@ -701,7 +701,8 @@ whil:
 		if(!strncmp(buf, "room", 4)){
 			int num = -1;
 			int opt = 0;
-			optind = 0;
+			optind = 1;
+			optarg = NULL;
 			while((opt = getopt(argc, argv, "n:")) != -1) {
 				switch (opt){
 					case 'n':

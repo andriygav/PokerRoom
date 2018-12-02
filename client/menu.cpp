@@ -164,7 +164,7 @@ void* menu_get_info_from_server(void* arguments){
 }
 static const char *newEnv[] = {
 	"exit",
-	"game"
+	"game",
 	"help",
 	NULL
 };
@@ -214,11 +214,7 @@ void* menu_scanf(void* arguments){
 		buf = readline("->menu->");
 		add_history(buf);
 		optind = 1;
-
-		// printf("->%c", '\0');
-		// scanf("%[^\n]s", rbuf.buf);
-		// char c = 0;
-		// scanf("%c", &c);
+		
 		snprintf(rbuf.buf, 256, "%s", buf);
 		if(!strncmp(rbuf.buf, "exit", 4)){
 			my->status = EXIT;

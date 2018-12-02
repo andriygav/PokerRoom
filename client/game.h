@@ -33,6 +33,8 @@ public:
 	client_t* my;
 
 	SDL_Surface* card_texture[54];
+
+	char* card_discript[54];
 	
 	char buf[256];
 

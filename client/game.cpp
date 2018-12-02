@@ -467,6 +467,43 @@ void* game_get_info_from_server(void* arguments){
 	return NULL;
 }
 
+static const char *newEnv[] = {
+	"exit",
+	"game",
+	"help",
+	"refresh",
+	"disconnect",
+	"new",
+	"call",
+	"raise",
+	"getmoney",
+	"putmoney",
+	NULL
+};
+
+static char *generator(const char *text, int state){
+	static int list_index, len;
+	char *name;
+
+	if (!state) {
+		list_index = 0;
+		len = strlen(text);
+	}
+
+	while ((name = (char*)newEnv[list_index++])){
+		if (strncmp(name, text, len) == 0){
+			return strdup(name);
+		}
+	}
+
+	return NULL;
+}
+
+static char **completion(const char *text, int start, int end){
+	rl_attempted_completion_over = 1;
+	return rl_completion_matches(text, generator);
+}
+
 
 void* game_scanf(void* arguments){
 	client_t* my = ((struct game_scanf_argument_t*)arguments)->my;
@@ -485,14 +522,11 @@ void* game_scanf(void* arguments){
 			free(buf);
 			buf = NULL;
 		}
+		rl_attempted_completion_function = completion;
 		buf = readline("->game->");
 		add_history(buf);
 		optind = 1;
 
-		// printf("->%c", '\0');
-		// scanf("%[^\n]s", rbuf.buf);
-		// char c = 0;
-		// scanf("%c", &c);
 		snprintf(rbuf.buf, 256, "%s", buf);
 
 		if(!strncmp(rbuf.buf, "exit", 4)){

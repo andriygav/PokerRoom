@@ -976,6 +976,7 @@ static const char *newEnv[] = {
 	"kill",
 	"delroom",
 	"showroomlog",
+	"showallclient",
 	"help",
 	NULL
 };
@@ -1060,7 +1061,7 @@ whil:
 		buf = readline(pwd);
 		add_history(buf);
 		argc = 0;
-		optind = 0;
+		optind = 1;
 		argv = get_argv(buf, &argc);
 
 		if(!strncmp(buf, "exit", 4)){

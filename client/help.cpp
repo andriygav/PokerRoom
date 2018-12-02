@@ -373,6 +373,35 @@ static int print_help(){
 	return 0;
 }
 
+static const char *newEnv[] = {
+	"exit",
+	"help",
+	NULL
+};
+
+static char *generator(const char *text, int state){
+	static int list_index, len;
+	char *name;
+
+	if (!state) {
+		list_index = 0;
+		len = strlen(text);
+	}
+
+	while ((name = (char*)newEnv[list_index++])){
+		if (strncmp(name, text, len) == 0){
+			return strdup(name);
+		}
+	}
+
+	return NULL;
+}
+
+static char **completion(const char *text, int start, int end){
+	rl_attempted_completion_over = 1;
+	return rl_completion_matches(text, generator);
+}
+
 void* help_scanf(void* arguments){
 	client_t* my = ((struct help_scanf_argument_t*)arguments)->my;
 	pthread_mutex_t* mut_exit = ((struct help_scanf_argument_t*)arguments)->mut_exit;
@@ -389,14 +418,10 @@ void* help_scanf(void* arguments){
 
 	char * buf = NULL;
 	while(1){
-		// rl_attempted_completion_function = completion;
+		rl_attempted_completion_function = completion;
 		buf = readline("->help->");
 		add_history(buf);
 
-		// printf("->%c", '\0');
-		// scanf("%[^\n]s", rbuf.buf);
-		// char c = 0;
-		// scanf("%c", &c);
 		snprintf(rbuf.buf, 256, "%s", buf);
 		if(!strncmp(rbuf.buf, "exit", 4)){
 			my->status = EXIT;

@@ -67,7 +67,7 @@ static void menu_button_click_func(void* pointer){
 	}
 	rbuf.id = tmp->my->id;
 	sprintf(rbuf.buf, "%s", tmp->buf);
-	strncpy(rbuf.login, "client", 256);
+	strncpy(rbuf.login, tmp->my->login, 256);
 	send(tmp->my->sock, &rbuf, sizeof(rbuf), 0);
 	return;
 }
@@ -223,7 +223,7 @@ void* menu_scanf(void* arguments){
 			goto out;
 		} else if(!strncmp(rbuf.buf, "game", 4)){
 			rbuf.id = my->id;
-			strncpy(rbuf.login, "client", 256);
+			strncpy(rbuf.login, my->login, 256);
 			send(my->sock, &rbuf, sizeof(rbuf), 0);
 			goto out;
 		} else if(!strncmp(rbuf.buf, "help", 4)){

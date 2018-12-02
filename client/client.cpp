@@ -169,7 +169,11 @@ int client_t::rewrite(struct sendinf * newinf){
 	return 0;
 }
 
-client_t::client_t(int status, int sock, bool* argument, int fildis){
+client_t::client_t(int status, int sock, bool* argument, int fildis, char login[256]){
+	for(int i = 0; i < 256; i++){
+		this->login[i] = login[i];
+	}
+
 	this->fd = fildis;
 	for(int i = 0; i < 256; i++){
 		this->argument[i] = argument[i];
@@ -343,10 +347,6 @@ int client_t::menu(){
 	pthread_join(menu_get_info_from_server_thread, NULL);
 	if(this->argument['t'])
 		pthread_join(menu_scanf_thread, NULL);
-
-	if(!this->argument['T']){
-		pthread_join(menu_scene_thread, NULL);
-	}
 
 	pthread_mutex_destroy(mut_exit);
 	free(mut_exit);

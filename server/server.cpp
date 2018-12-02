@@ -657,6 +657,7 @@ int start_server(int port, const char* adr, int md, struct table_t* tb) {
 	    for (int i = 1; i < MAX_CLIENT_NUM; i++) {
 	      if (tb->arr[i] == 0) {
 	        tb->arr[i] = 1;
+          snprintf(tb->login[i], 256, "%s", authent_rec.login);
 	        k = i;
 	        break;
 	      }
@@ -1030,6 +1031,7 @@ static const char *newEnv[] = {
 	"delroom",
 	"showroomlog",
 	"showallclient",
+  "showclient",
 	"help",
 	NULL
 };
@@ -1216,16 +1218,35 @@ whil:
 				}
 			}
 		}
-		if(!strncmp(buf, "showallclient", 12)){
+		if(!strncmp(buf, "showallclient", 13)){
 			printf("\n--------------------SHOW CONNECT PEOPLE--------------------\n");
 			for(int i = 0; i < MAX_CLIENT_NUM; i++){
 				if(tb->arr[i]){
 					printf("%d ", i);
 				}
-				
 			}
 			printf("\n");
 		}
+    if(!strncmp(buf, "showclient", 10)){
+      optind = 1;
+      optarg = NULL;
+      int opt = 0;
+      int num = -1;
+      while((opt = getopt(argc, argv, "n:")) != -1) {
+        switch (opt){
+          case 'n':
+            num = atoi(optarg);
+            optarg = NULL;
+            break;
+          default:
+            break;
+        }
+      }
+      if(num > -1){
+        printf("\n------------------------SHOW CLIENT------------------------\n");
+        printf("%d:\t%s\n", num, tb->login[num]);
+      }
+    }
 		if(!strncmp(buf, "showroomlog", 11)){
 			int num = -1;
 			int opt = 0;
@@ -1234,7 +1255,7 @@ whil:
 			optind = 1;
 			optarg = NULL;
 			bool flag_log_stat = false;
-			while((opt = getopt(argc, argv, "n:f:s")) != -1) {
+			while((opt = getopt(argc, argv, "n:f:sh")) != -1) {
 				switch (opt){
 					case 'n':
 						num = atoi(optarg);
@@ -1248,6 +1269,14 @@ whil:
 						flag = false;
 						flag_log_stat = true;
 						break;
+          case 'h':
+            printf("showroomlog [-s] [-f str] [-n i] [-h]\n");
+            printf("where:\n\t");
+            printf("-s : for printing statistic\n\t");
+            printf("-f : for finding \'str\' in log\n\t");
+            printf("-n : for printing log only for room \'i\'\n");
+            goto whil;
+            break;
 					default:
 						break;
 				}
@@ -1324,6 +1353,27 @@ out:
 }
 
 int main(int argc, char** argv) {
+
+  int given_port = 3425;
+  char* given_addres = (char*)"127.0.0.1";
+
+  optind = 1;
+  optarg = NULL;
+  int opt = 0;
+  while((opt = getopt(argc, argv, "p:a:")) != -1) {
+    switch (opt){
+      case 'p':
+        given_port = atoi(optarg);
+        optarg = NULL;
+        break;
+      case 'a':
+        given_addres = optarg;
+        break;
+      default:
+        break;
+    }
+  }
+
   int md = msgget(IPC_PRIVATE, IPC_CREAT | IPC_EXCL | 0666);
   if (md == -1) {
     perror("msgget in main");
@@ -1367,7 +1417,7 @@ int main(int argc, char** argv) {
   pid_server = fork();
 
   if (!pid_server) {
-    return start_server(3425, "127.0.0.1", md, tb);
+    return start_server(given_port, given_addres, md, tb);
   }
 
   void* argv_for_send = (struct get_comand_server_argumets_t*)malloc(

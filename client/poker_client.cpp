@@ -79,7 +79,7 @@ int main(int argc, char **argv){
 	set_arguments(argument, argc, argv);
 
 	int given_port = 3425;
-	char* given_addres = "127.0.0.1";
+	char* given_addres = (char*)"127.0.0.1";
 
 	optind = 1;
 	optarg = NULL;
@@ -146,7 +146,7 @@ int main(int argc, char **argv){
 
 //Conect(end)
     if(authent_rec.status == CLIENT){
-		client_t obj(0, sock, argument, fd);
+		client_t obj(0, sock, argument, fd, authent_rec.login);
 		while(1){
 			switch(obj.status){
 				case FIRST_STATUS:

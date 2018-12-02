@@ -98,6 +98,7 @@ struct client {
 struct table_t {
   struct client cl[COUNT_OF_ROOM];
   char arr[MAX_CLIENT_NUM];
+  char login[MAX_CLIENT_NUM][256];
   pthread_t thread_poker[COUNT_OF_ROOM];
   pthread_t thread_client[MAX_CLIENT_NUM];
   pthread_mutex_t mut_read_client;

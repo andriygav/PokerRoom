@@ -42,7 +42,7 @@ public:
 	int status;
 	int sock;
 	int fd;
-	client_t(int status, int sock, bool* argument, int fd);
+	client_t(int status, int sock, bool* argument, int fd, char login[]);
 	~client_t();
 
 	int first_state();
@@ -53,6 +53,8 @@ public:
 //Help object
 	int help();
 //Game object
+	char login[256];
+
 	int final_table[6];
 	int game();
 	struct publplayinfo player[6];

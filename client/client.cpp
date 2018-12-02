@@ -67,6 +67,24 @@ int client_t::cheak_pok_status(int st){
 	return 0;
 }
 
+int client_t::show_all_inf_to_console(){
+	printf("\n--------------------------------------------------\n");
+	printf("\n-----------------------TABLE----------------------\n");
+	printf("bank = %f, curen bet = %f, card = %d %d %d %d %d\n", this->table.bank, this->table.bet, this->table.card[0], this->table.card[1], this->table.card[2], this->table.card[3], this->table.card[4]);
+	for(int i = 0; i<6;i++){
+		printf("%d \t", this->final_table[i]);
+	}
+	printf("\n-----------------------PLAYERS--------------------\n");
+	printf("login\t\tstatus\tcash\t\tbet\tcards\t\tplace\n");
+	for(int i = 0; i<6;i++){
+		printf("%-8s\t%d\t%-12.1lf\t%.1lf\t%d%'8d\t%d\n", this->player[i].login, this->player[i].status, this->player[i].cash, this->player[i].bet, this->player[i].card[0], this->player[i].card[1], this->final_table[i]);	
+	}
+	printf("\n-----------------------MYCARDS--------------------\n");
+	printf("status = %d; %d %d\n", this->player[this->num].status, this->mycard[0], this->mycard[1]);
+	printf("\n--------------------------------------------------\n");
+	return 0;
+}
+
 int client_t::show_all_inf(){
 	log(this->fd, "\n--------------------------------------------------\n");
 	log(this->fd, "\n-----------------------TABLE----------------------\n");
@@ -75,6 +93,7 @@ int client_t::show_all_inf(){
 	for(int i = 0; i<6;i++){
 		log(this->fd, "%d", this->player[i].status);	
 	}
+	log(this->fd, "\n");
 	for(int i = 0; i<6;i++){
 		log(this->fd, "%d", this->final_table[i]);
 	}
@@ -152,9 +171,11 @@ client_t::client_t(int status, int sock, bool* argument, int fildis){
 			this->player[i].login[j] = 0;
 		}
 	}
-	this->screen = NULL;
+	
 	if(!this->argument['T']){
 		this->visual_init();
+	}else{
+		this->screen = NULL;
 	}
 	
 }
@@ -206,7 +227,7 @@ int client_t::first_state(){
 	while(1){
 		bytes_read = recv(sock, &rec, sizeof(rec), MSG_DONTWAIT);
 		if(bytes_read == 0){
-			log(this->fd, "Lost conection whith server\n");
+			log(this->fd, "Lost conection with server\n");
 			this->status = EXIT;
 			return EXIT;
 		}
@@ -224,17 +245,13 @@ int client_t::first_state(){
 		}
 	}
 
-	return 0;
+	return EXIT;
 }
 
 
 
 int client_t::menu(){
 	log(this->fd, "menu\n");
-
-	if(this->argument['t']){
-		printf("menu\n");
-	}
 
 	class menu scene(this->screen, this);
 	if(!this->argument['T']){
@@ -310,10 +327,6 @@ int client_t::menu(){
 
 int client_t::help(){
 	log(this->fd, "help\n");
-
-	if(this->argument['t']){
-		printf("help\n");
-	}
 
 	class help scene(this->screen, this, "../client/source/help.help");
 	if(!this->argument['T']){

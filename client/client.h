@@ -61,6 +61,7 @@ public:
 	int num;
 	int rewrite(struct sendinf*);
 	int show_all_inf();
+	int show_all_inf_to_console();
 	int cheak_pok_status(int);
 
 //Visual object

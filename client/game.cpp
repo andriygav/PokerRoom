@@ -15,6 +15,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include <readline/readline.h>
+#include <readline/history.h>
+
 #include "game.h"
 
 #define COUNT_OF_BUTTON 10
@@ -417,6 +420,10 @@ void* game_get_info_from_server(void* arguments){
 			my->rewrite(&(rec.inf));
 			my->show_all_inf();
 
+			if(my->argument['t']){
+				my->show_all_inf_to_console();
+			}
+
 			if(!my->argument['T']){
 				if(!my->cheak_pok_status(STATUS_ACTIVE)){
 					scene->but[5]->status = false;
@@ -471,27 +478,43 @@ void* game_scanf(void* arguments){
 		rbuf.buf[i] = 0;
 	}
 
+	char * buf = NULL;
+
 	while(1){
-		printf("->%c", '\0');
-		scanf("%[^\n]s", rbuf.buf);
-		char c = 0;
-		scanf("%c", &c);
+		if(buf != NULL){
+			free(buf);
+			buf = NULL;
+		}
+		buf = readline("->game->");
+		add_history(buf);
+		optind = 1;
+
+		// printf("->%c", '\0');
+		// scanf("%[^\n]s", rbuf.buf);
+		// char c = 0;
+		// scanf("%c", &c);
+		snprintf(rbuf.buf, 256, "%s", buf);
+
 		if(!strncmp(rbuf.buf, "exit", 4)){
 			my->status = EXIT;
 			rbuf.id = my->id;
 			send(my->sock, &rbuf, sizeof(rbuf), 0);
+			goto out;
 		} else if(!strncmp(rbuf.buf, "help", 4)){
 			rbuf.id = my->id;
 			send(my->sock, &rbuf, sizeof(rbuf), 0);
+			goto out;
 		} else if(!strncmp(rbuf.buf, "menu", 4)){
 			rbuf.id = my->id;
 			send(my->sock, &rbuf, sizeof(rbuf), 0);
+			goto out;
 		} else if(!strncmp(rbuf.buf, "refresh", 7)){
 			rbuf.id = my->id;
 			send(my->sock, &rbuf, sizeof(rbuf), 0);
 		} else if(!strncmp(rbuf.buf, "disconnect", 11)){
 			rbuf.id = my->id;
 			send(my->sock, &rbuf, sizeof(rbuf), 0);
+			goto out;
 		} else if(!strncmp(rbuf.buf, "new", 3)){
 			if(my->cheak_pok_status(STATUS_AFTER_GAME) || my->cheak_pok_status(STATUS_WINER)){
 				rbuf.id = my->id;
@@ -537,6 +560,11 @@ void* game_scanf(void* arguments){
 		}
 	}
 	pthread_mutex_unlock(mut_exit);
+out:
+	if(buf != NULL){
+		free(buf);
+		buf = NULL;
+	}
 	return NULL;
 }
 

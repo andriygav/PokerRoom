@@ -16,6 +16,9 @@
 #include <unistd.h>
 #include "help.h"
 
+#include <readline/readline.h>
+#include <readline/history.h>
+
 #define COUNT_OF_BUTTON 4
 #define COUNT_OF_FONT 3
  
@@ -383,21 +386,35 @@ void* help_scanf(void* arguments){
 		rbuf.buf[i] = 0;
 	}
 	char c;
+
+	char * buf = NULL;
 	while(1){
-		printf("->%c", '\0');
-		scanf("%[^\n]s", rbuf.buf);
-		char c = 0;
-		scanf("%c", &c);
+		// rl_attempted_completion_function = completion;
+		buf = readline("->help->");
+		add_history(buf);
+
+		// printf("->%c", '\0');
+		// scanf("%[^\n]s", rbuf.buf);
+		// char c = 0;
+		// scanf("%c", &c);
+		snprintf(rbuf.buf, 256, "%s", buf);
 		if(!strncmp(rbuf.buf, "exit", 4)){
 			my->status = EXIT;
 			rbuf.id = my->id;
 			send(my->sock, &rbuf, sizeof(rbuf), 0);
+			goto out;
 		} else if(!strncmp(rbuf.buf, "menu", 4)){
 			rbuf.id = my->id;
 			send(my->sock, &rbuf, sizeof(rbuf), 0);
+			goto out;
 		}
 	}
 	pthread_mutex_unlock(mut_exit);
+	out:
+	if(buf != NULL){
+		free(buf);
+		buf = NULL;
+	}
 	return NULL;
 }
 

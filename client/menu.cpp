@@ -16,6 +16,9 @@
 #include <unistd.h>
 #include "menu.h"
 
+#include <readline/readline.h>
+#include <readline/history.h>
+
 #define COUNT_OF_BUTTON 3
 
 struct str_t{
@@ -159,7 +162,35 @@ void* menu_get_info_from_server(void* arguments){
 	pthread_mutex_unlock(mut_exit);
 	return NULL;
 }
+static const char *newEnv[] = {
+	"exit",
+	"game"
+	"help",
+	NULL
+};
 
+static char *generator(const char *text, int state){
+	static int list_index, len;
+	char *name;
+
+	if (!state) {
+		list_index = 0;
+		len = strlen(text);
+	}
+
+	while ((name = (char*)newEnv[list_index++])){
+		if (strncmp(name, text, len) == 0){
+			return strdup(name);
+		}
+	}
+
+	return NULL;
+}
+
+static char **completion(const char *text, int start, int end){
+	rl_attempted_completion_over = 1;
+	return rl_completion_matches(text, generator);
+}
 
 void* menu_scanf(void* arguments){
 	client_t* my = ((struct menu_scanf_argument_t*)arguments)->my;
@@ -171,25 +202,46 @@ void* menu_scanf(void* arguments){
 		rbuf.buf[i] = 0;
 	}
 	char c;
+
+	char * buf = NULL;
+
 	while(1){
-		printf("->%c", '\0');
-		scanf("%[^\n]s", rbuf.buf);
-		char c = 0;
-		scanf("%c", &c);
+		if(buf != NULL){
+			free(buf);
+			buf = NULL;
+		}
+		rl_attempted_completion_function = completion;
+		buf = readline("->menu->");
+		add_history(buf);
+		optind = 1;
+
+		// printf("->%c", '\0');
+		// scanf("%[^\n]s", rbuf.buf);
+		// char c = 0;
+		// scanf("%c", &c);
+		snprintf(rbuf.buf, 256, "%s", buf);
 		if(!strncmp(rbuf.buf, "exit", 4)){
 			my->status = EXIT;
 			rbuf.id = my->id;
 			send(my->sock, &rbuf, sizeof(rbuf), 0);
+			goto out;
 		} else if(!strncmp(rbuf.buf, "game", 4)){
 			rbuf.id = my->id;
 			strncpy(rbuf.login, "client", 256);
 			send(my->sock, &rbuf, sizeof(rbuf), 0);
+			goto out;
 		} else if(!strncmp(rbuf.buf, "help", 4)){
 			rbuf.id = my->id;
 			send(my->sock, &rbuf, sizeof(rbuf), 0);
+			goto out;
 		}
 	}
 	pthread_mutex_unlock(mut_exit);
+out:
+	if(buf != NULL){
+		free(buf);
+		buf = NULL;
+	}
 	return NULL;
 }
 

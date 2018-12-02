@@ -1,6 +1,8 @@
 #include <readline/history.h>
 #include <readline/readline.h>
 
+#include <signal.h>
+
 #include "display.h"
 #include "poker_table.h"
 
@@ -979,7 +981,6 @@ out_get_argv:
   return nullptr;
 }
 
-<<<<<<< HEAD
 static const char *newEnv[] = {
 	"exit",
 	"room",
@@ -991,10 +992,7 @@ static const char *newEnv[] = {
 	"help",
 	NULL
 };
-=======
-static const char* newEnv[] = {"exit",    "room",        "display", "kill",
-                               "delroom", "showroomlog", "help",    NULL};
->>>>>>> ea0d9612030bc75ad8434f280c218ffe238690c5
+
 
 char* generator(const char* text, int state) {
   static int list_index, len;
@@ -1037,7 +1035,6 @@ static int print_help() {
   return 0;
 }
 
-<<<<<<< HEAD
 
 void* get_comand_server(void* arguments){
 	int md = ((struct get_comand_server_argumets_t*) arguments)->md;
@@ -1265,238 +1262,6 @@ whil:
 			print_help();
 		}
 	}
-
-=======
-void* get_comand_server(void* arguments) {
-  int md = ((struct get_comand_server_argumets_t*)arguments)->md;
-  struct table_t* tb = ((struct get_comand_server_argumets_t*)arguments)->tb;
-  const char* pwd = ((struct get_comand_server_argumets_t*)arguments)->pwd;
-  free((struct get_comand_server_argumets_t*)arguments);
-
-  char* buf = NULL;
-
-  struct msg_from_server_t msg_from_serv;
-  msg_from_serv.num = 0;
-  msg_from_serv.comand = 0;
-
-  char** argv = NULL;
-  size_t argc = 0;
-
-  while (1) {
-  whil:
-    if (argv != NULL) {
-      for (size_t i = 0; i < argc; i++) {
-        if (argv[i] != NULL) {
-          free(argv[i]);
-          argv[i] = NULL;
-        }
-      }
-      free(argv);
-      argv = NULL;
-      argc = 0;
-    }
-    if (buf != NULL) {
-      free(buf);
-      buf = NULL;
-    }
-
-    rl_attempted_completion_function = completion;
-    buf = readline(pwd);
-    add_history(buf);
-    argc = 0;
-    optind = 0;
-    argv = get_argv(buf, &argc);
-
-    if (!strncmp(buf, "exit", 4)) {
-      for (int i = 0; i < MAX_CLIENT_NUM; i++) {
-        if (tb->arr[i] != 0) {
-          msg_from_serv.num = i;
-          msg_from_serv.comand = SERVER_COMAND_EXIT;
-          msgsnd(md, (void*)(&msg_from_serv),
-                 sizeof(msg_from_serv) - sizeof(msg_from_serv.num), 0);
-          tb->arr[i] = 0;
-        }
-      }
-      for (int i = 0; i < COUNT_OF_ROOM; i++) {
-        if (tb->cl[i].PokMesDis != -1) {
-          msg_from_serv.num = FROM_SERVER_TO_TABLE + i;
-          msg_from_serv.comand = SERVER_COMAND_EXIT;
-          msgsnd(md, (void*)(&msg_from_serv),
-                 sizeof(msg_from_serv) - sizeof(msg_from_serv.num), 0);
-        }
-      }
-      for (int i = 0; i < COUNT_OF_ROOM; i++) {
-        if (tb->cl[i].PokMesDis != -1) {
-          pthread_join(tb->thread_poker[i], NULL);
-        }
-      }
-      msgctl(md, IPC_RMID, NULL);
-      goto out;
-    }
-    if (argv == NULL) {
-      perror("get_argv:");
-      goto whil;
-    }
-    if (!strncmp(buf, "display", 7)) {
-      char* newpwd;
-      asprintf(&newpwd, "%sdisplay->", pwd);
-      display((void*)tb, md, newpwd);
-      free(newpwd);
-      newpwd = NULL;
-    }
-    if (!strncmp(buf, "room", 4)) {
-      int num = -2;
-      FILE* file = NULL;
-      int opt = 0;
-      optind = 1;
-      optarg = NULL;
-      while ((opt = getopt(argc, argv, "n:f:")) != -1) {
-        switch (opt) {
-          case 'n':
-            num = atoi(optarg);
-            optarg = NULL;
-            break;
-          case 'f':
-            file = fopen(optarg, "r");
-            if (!file) perror(optarg);
-            optarg = NULL;
-            break;
-          default:
-            break;
-        }
-      }
-      if (num > -1) {
-        create_room(tb, md, num, file);
-      } else if (num == -1) {
-        for (int num = 0; num < COUNT_OF_ROOM; num++) {
-          create_room(tb, md, num, NULL);
-        }
-      }
-    }
-    if (!strncmp(buf, "kill", 4)) {
-      int num = -2;
-      int opt = 0;
-      optind = 1;
-      optarg = NULL;
-      while ((opt = getopt(argc, argv, "n:")) != -1) {
-        switch (opt) {
-          case 'n':
-            num = atoi(optarg);
-            optarg = NULL;
-            break;
-          default:
-            break;
-        }
-      }
-      if (num >= 0) {
-        if (tb->arr[num]) {
-          msg_from_serv.num = num;
-          msg_from_serv.comand = SERVER_COMAND_EXIT;
-          msgsnd(md, (void*)(&msg_from_serv),
-                 sizeof(msg_from_serv) - sizeof(msg_from_serv.num), 0);
-          tb->arr[num] = 0;
-        }
-      } else if (num == -1) {
-        for (int i = 0; i < MAX_CLIENT_NUM; i++) {
-          if (tb->arr[i]) {
-            msg_from_serv.num = i;
-            msg_from_serv.comand = SERVER_COMAND_EXIT;
-            msgsnd(md, (void*)(&msg_from_serv),
-                   sizeof(msg_from_serv) - sizeof(msg_from_serv.num), 0);
-            tb->arr[i] = 0;
-          }
-        }
-      }
-    }
-    if (!strncmp(buf, "showallclient", 12)) {
-      printf("\n--------------------SHOW CONNECT PEOPLE--------------------\n");
-      for (int i = 0; i < MAX_CLIENT_NUM; i++) {
-        if (tb->arr[i]) {
-          printf("%d ", i);
-        }
-      }
-      printf("\n");
-    }
-    if (!strncmp(buf, "showroomlog", 11)) {
-      int num = -1;
-      int opt = 0;
-      bool flag = true;
-      char* str = NULL;
-      optind = 1;
-      optarg = NULL;
-      bool flag_log_stat = false;
-      while ((opt = getopt(argc, argv, "n:f:s")) != -1) {
-        switch (opt) {
-          case 'n':
-            num = atoi(optarg);
-            optarg = NULL;
-            break;
-          case 'f':
-            str = optarg;
-            optarg = NULL;
-            break;
-          case 's':
-            flag = false;
-            flag_log_stat = true;
-            break;
-          default:
-            break;
-        }
-      }
-      if (flag_log_stat) {
-        show_stat(num, tb);
-      } else if (num >= 0 && flag) {
-        if (str == NULL) {
-          show_room(num, tb);
-        } else {
-          get_room_log_str(num, tb, str, strlen(str));
-        }
-      }
-    }
-    if (!strncmp(buf, "delroom", 7)) {
-      int num = -2;
-      int opt = 0;
-      optind = 1;
-      optarg = NULL;
-      while ((opt = getopt(argc, argv, "n:")) != -1) {
-        switch (opt) {
-          case 'n':
-            num = atoi(optarg);
-            optarg = NULL;
-            break;
-          default:
-            break;
-        }
-      }
-      if (num >= 0) {
-        if (num < COUNT_OF_ROOM) {
-          if (tb->cl[num].PokMesDis != -1) {
-            msg_from_serv.num = FROM_SERVER_TO_TABLE + num;
-            msg_from_serv.comand = SERVER_COMAND_EXIT;
-            msgsnd(md, (void*)(&msg_from_serv),
-                   sizeof(msg_from_serv) - sizeof(msg_from_serv.num), 0);
-            pthread_join(tb->thread_poker[num], NULL);
-          }
-        }
-        printf("room № %d deleted\n", num);
-      } else if (num == -1) {
-        for (int i = 0; i < COUNT_OF_ROOM; i++) {
-          if (tb->cl[i].PokMesDis != -1) {
-            msg_from_serv.num = FROM_SERVER_TO_TABLE + i;
-            msg_from_serv.comand = SERVER_COMAND_EXIT;
-            msgsnd(md, (void*)(&msg_from_serv),
-                   sizeof(msg_from_serv) - sizeof(msg_from_serv.num), 0);
-            pthread_join(tb->thread_poker[i], NULL);
-          }
-        }
-        printf("allroom deleted\n");
-      }
-    }
-    if (!strncmp(buf, "help", 4)) {
-      print_help();
-    }
-  }
->>>>>>> ea0d9612030bc75ad8434f280c218ffe238690c5
 
 out:
   if (argv != NULL) {

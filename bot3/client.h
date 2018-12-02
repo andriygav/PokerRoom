@@ -602,13 +602,16 @@ int OP(int sem, int num, int opt){
 	return ret;
 }
 
-union semun {
+#ifdef __linux__ 
+    union semun {
 	int val;                  /* значение для SETVAL */
 	struct semid_ds *buf;     /* буферы для  IPC_STAT, IPC_SET */
 	unsigned short *array;    /* массивы для GETALL, SETALL */
 		           /* часть, особенная для Linux: */
 	struct seminfo *__buf;    /* буфер для IPC_INFO */
 };
+#endif
+
 
 FILE* fres = fopen("Bot3/fres.txt", "a+");
 void* game_get_info_from_server(void* arguments){

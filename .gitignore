@@ -32,6 +32,7 @@ bin/*
 lib/*
 *.txt
 callgrind.out.*
+.DS_Store
 
 **/cmake-build-debug
 **/CMakeCache.txt

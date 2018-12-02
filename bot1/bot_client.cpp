@@ -38,6 +38,14 @@ out:
 	return ret;
 }
 
+#pragma pack(push, 1)
+struct authentication_t {
+  char login[256];
+  char password[256];
+  int status;
+};
+#pragma pack(pop)
+
 int main(int argc, char **argv){
 	std::cin.clear();
 //Conect(begin)
@@ -68,6 +76,13 @@ int main(int argc, char **argv){
 		log(fd, "socket", strerror(errno));
 		exit(1);
 	}
+
+	struct authentication_t authent_rec;
+	authent_rec.status = -1;
+ 
+   	sprintf(authent_rec.login, "bot");
+   	sprintf(authent_rec.password, "bot");
+
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(3425/*atoi(argv[1])*/);
 	addr.sin_addr.s_addr = inet_addr("127.0.0.1"/*argv[2]*/);
@@ -75,6 +90,15 @@ int main(int argc, char **argv){
 		log(fd, "Conect", strerror(errno));
 		return 1;
    	}
+
+   	send(sock, &authent_rec, sizeof(authent_rec), 0);
+   	int bytes_read = 0;
+   	bytes_read = recv(sock, &authent_rec, sizeof(authent_rec), 0);
+    if (bytes_read == 0) {
+    	log(fd, "Connect: %s", strerror(errno));
+    	return 1;
+    }
+
 //Conect(end)
 	client obj(0, sock, argument, fd);
 	while(1){

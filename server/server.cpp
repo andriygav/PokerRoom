@@ -590,6 +590,17 @@ int create_room(struct table_t* tb, int md, int num, FILE* file) {
   return 0;
 }
 
+#define ADMIN 0
+#define CLIENT 1
+
+#pragma pack(push, 1)
+struct authentication_t {
+  char login[256];
+  char password[256];
+  int status;
+};
+#pragma pack(pop)
+
 int start_server(int port, const char* adr, int md, struct table_t* tb) {
   int sock = 0;
   struct sockaddr_in addr;
@@ -613,33 +624,63 @@ int start_server(int port, const char* adr, int md, struct table_t* tb) {
   listen(listener, 1);
   int pid = 0;
   int status = 0;
+
+  int bytes_read = 0;
+
+  struct authentication_t authent_rec;
+
   while (1) {
+ whil:
     sock = accept(listener, NULL, NULL);
     if (sock < 0) {
       perror("Прием входящих подключений");
       return 1;
     }
-    int k = -1;
-    pthread_mutex_lock(&(tb->mut_read_client));
-    for (int i = 1; i < MAX_CLIENT_NUM; i++) {
-      if (tb->arr[i] == 0) {
-        tb->arr[i] = 1;
-        k = i;
-        break;
-      }
+
+    bytes_read = recv(sock, &authent_rec, sizeof(authent_rec), 0);
+
+    if (bytes_read == 0) {
+      goto whil;
     }
-    pthread_mutex_unlock(&(tb->mut_read_client));
-    if (k > 0) {
-      struct client_argumets_t* argv =
-          (struct client_argumets_t*)malloc(sizeof(struct client_argumets_t));
-      argv->sock = sock;
-      argv->md = md;
-      argv->num = k;
-      argv->tb = tb;
-      tb->thread_client[k] = 0;
-      pthread_create(&(tb->thread_client[k]), NULL, client, (void*)argv);
-      pthread_detach(tb->thread_client[k]);
+
+    if(!strncmp(authent_rec.login, "admin", 5)){
+    	authent_rec.status = ADMIN;
+    }else{
+    	authent_rec.status = CLIENT;
     }
+
+    send(sock, &authent_rec, sizeof(authent_rec), 0);
+
+    if(authent_rec.status == CLIENT){
+	    int k = -1;
+	    pthread_mutex_lock(&(tb->mut_read_client));
+	    for (int i = 1; i < MAX_CLIENT_NUM; i++) {
+	      if (tb->arr[i] == 0) {
+	        tb->arr[i] = 1;
+	        k = i;
+	        break;
+	      }
+	    }
+	    pthread_mutex_unlock(&(tb->mut_read_client));
+	    if (k > 0) {
+	      struct client_argumets_t* argv =
+	          (struct client_argumets_t*)malloc(sizeof(struct client_argumets_t));
+	      argv->sock = sock;
+	      argv->md = md;
+	      argv->num = k;
+	      argv->tb = tb;
+	      tb->thread_client[k] = 0;
+	      pthread_create(&(tb->thread_client[k]), NULL, client, (void*)argv);
+	      pthread_detach(tb->thread_client[k]);
+	    }
+	}else if(authent_rec.status == ADMIN){
+		close(sock);
+		/*
+		Your code here
+		Here you need to create new function for telling with admin client
+		*/
+	}
+
   }
   return 0;
 }

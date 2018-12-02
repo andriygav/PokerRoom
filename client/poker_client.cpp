@@ -57,6 +57,17 @@ out:
 }
 #undef main
 
+#define ADMIN 0
+#define CLIENT 1
+
+#pragma pack(push, 1)
+struct authentication_t {
+  char login[256];
+  char password[256];
+  int status;
+};
+#pragma pack(pop)
+
 int main(int argc, char **argv){
 	std::cin.clear();
 //Conect(begin)
@@ -105,6 +116,18 @@ int main(int argc, char **argv){
 		return 1;
 	}
 
+	struct authentication_t authent_rec;
+	authent_rec.status = -1;
+   	if(argument['t']){
+   		printf("%s\n", "Enter your login:");
+   		scanf("%250s", authent_rec.login);
+   		printf("%s\n", "Enter your password:");
+   		scanf("%250s", authent_rec.password);
+   	}else{
+   		sprintf(authent_rec.login, "client");
+   		sprintf(authent_rec.password, "client");
+   	}
+
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(given_port);
 	addr.sin_addr.s_addr = inet_addr(given_addres);
@@ -112,25 +135,41 @@ int main(int argc, char **argv){
 		log(fd, "Connect: %s", strerror(errno));
 		return 1;
    	}
+
+   	send(sock, &authent_rec, sizeof(authent_rec), 0);
+   	int bytes_read = 0;
+   	bytes_read = recv(sock, &authent_rec, sizeof(authent_rec), 0);
+    if (bytes_read == 0) {
+    	log(fd, "Connect: %s", strerror(errno));
+    	return 1;
+    }
+
 //Conect(end)
-	client_t obj(0, sock, argument, fd);
-	while(1){
-		switch(obj.status){
-			case FIRST_STATUS:
-				obj.first_state();
-				break;
-			case MENU:
-				obj.menu();
-				break;
-			case HELP:
-				obj.help();
-				break;
-			case GAME:
-				obj.game();
-				break;
-			default:
-				goto out;
+    if(authent_rec.status == CLIENT){
+		client_t obj(0, sock, argument, fd);
+		while(1){
+			switch(obj.status){
+				case FIRST_STATUS:
+					obj.first_state();
+					break;
+				case MENU:
+					obj.menu();
+					break;
+				case HELP:
+					obj.help();
+					break;
+				case GAME:
+					obj.game();
+					break;
+				default:
+					goto out;
+			}
 		}
+	}else{
+		close(sock);
+		/*
+		Your code here need to create new client who can to telling with client
+		*/
 	}
 out:
 	close(fd);

@@ -375,7 +375,7 @@ static int print_help(){
 
 static const char *newEnv[] = {
 	"exit",
-	"help",
+	"menu",
 	NULL
 };
 

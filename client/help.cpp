@@ -128,6 +128,7 @@ int help::show(){
 	};
 
 	SDL_Flip(this->screen);
+	return 0;
 }
 struct help_t{
 	help* my;
@@ -253,46 +254,49 @@ int help::read_text(int fd){
 }
 
 help::help(SDL_Surface* screen, client_t* my, const char* help_text){
-	this->back = load_image("../client/VisSource/background.bmp");
-	for(int i = 0; i < 256; i++)
-		this->but[i] = NULL;
+	this->screen = NULL;
+	if(!my->argument['T']){
+		this->back = load_image("../client/VisSource/background.bmp");
+		for(int i = 0; i < 256; i++)
+			this->but[i] = NULL;
 
-	for(int i = 0; i < COUNTOFPAGE; i++){
-		for(int j = 0; j < PAGESIZE; j++){
-			for(int t = 0; t < LINESIZE; t++){
-				this->text[i].line[j][t] = 0;
-				this->text[i].optline[j] = 0;
-				this->text[i].fontline[j] = 0;
+		for(int i = 0; i < COUNTOFPAGE; i++){
+			for(int j = 0; j < PAGESIZE; j++){
+				for(int t = 0; t < LINESIZE; t++){
+					this->text[i].line[j][t] = 0;
+					this->text[i].optline[j] = 0;
+					this->text[i].fontline[j] = 0;
+				}
 			}
 		}
+		this->curent_page = 0;
+		this->count_of_page = 1;
+		int fd = open(help_text, O_RDONLY);
+
+		if(fd >= 0){
+			this->read_text(fd);
+			close(fd);
+		}
+
+		this->my = my;
+		this->screen = screen;
+		struct str_t* tmp = NULL;
+		this->font = TTF_OpenFont("../client/VisSource/font.ttf", 24);
+		this->TextFont[0] = TTF_OpenFont("../client/VisSource/litleFont.ttf", 24);
+		this->TextFont[1] = TTF_OpenFont("../client/VisSource/midleFont.ttf", 24);
+		this->TextFont[2] = TTF_OpenFont("../client/VisSource/hightFont.ttf", 24);
+
+	 	tmp = set_str_t(this->my, "exit");
+		this->but[0] = new button(600, 0, 200, 30, "../client/VisSource/button.bmp", "exit", this->font, (void *)help_button_click_func, tmp);
+	 	tmp = set_str_t(this->my, "menu");
+		this->but[1] = new button(600, 35, 200, 30, "../client/VisSource/button.bmp", "menu", this->font, (void *)help_button_click_func, tmp);
+		
+		struct help_t* tmp2 = NULL;
+		tmp2 = set_help_t(this);
+		this->but[2] = new button(400, 570, 200, 30, "../client/VisSource/button.bmp", "next", this->font, (void *)help_button_next_click_func, tmp2);
+		tmp2 = set_help_t(this);
+		this->but[3] = new button(0, 570, 200, 30, "../client/VisSource/button.bmp", "prev", this->font, (void *)help_button_prev_click_func, tmp2);
 	}
-	this->curent_page = 0;
-	this->count_of_page = 1;
-	int fd = open(help_text, O_RDONLY);
-
-	if(fd >= 0){
-		this->read_text(fd);
-		close(fd);
-	}
-
-	this->my = my;
-	this->screen = screen;
-	struct str_t* tmp = NULL;
-	this->font = TTF_OpenFont("../client/VisSource/font.ttf", 24);
-	this->TextFont[0] = TTF_OpenFont("../client/VisSource/litleFont.ttf", 24);
-	this->TextFont[1] = TTF_OpenFont("../client/VisSource/midleFont.ttf", 24);
-	this->TextFont[2] = TTF_OpenFont("../client/VisSource/hightFont.ttf", 24);
-
- 	tmp = set_str_t(this->my, "exit");
-	this->but[0] = new button(600, 0, 200, 30, "../client/VisSource/button.bmp", "exit", this->font, (void *)help_button_click_func, tmp);
- 	tmp = set_str_t(this->my, "menu");
-	this->but[1] = new button(600, 35, 200, 30, "../client/VisSource/button.bmp", "menu", this->font, (void *)help_button_click_func, tmp);
-	
-	struct help_t* tmp2 = NULL;
-	tmp2 = set_help_t(this);
-	this->but[2] = new button(400, 570, 200, 30, "../client/VisSource/button.bmp", "next", this->font, (void *)help_button_next_click_func, tmp2);
-	tmp2 = set_help_t(this);
-	this->but[3] = new button(0, 570, 200, 30, "../client/VisSource/button.bmp", "prev", this->font, (void *)help_button_prev_click_func, tmp2);
 }
 
 int help::action(SDL_Event* event){
@@ -304,23 +308,26 @@ int help::action(SDL_Event* event){
 			}
 		}
 	}
+	return 0;
 }
 
 help::~help(){
-	this->screen = NULL;
-	TTF_CloseFont(this->font);
-	for(int i = 0; i < COUNT_OF_FONT; i++){
-		TTF_CloseFont(this->TextFont[i]);
-	}
-	SDL_FreeSurface(this->back);
-	this->font = NULL;
-	for(int i = 0; i < 256; i++){
-		if(this->but[i] != NULL){
-			if(this->but[i]->action_data)
-				free(this->but[i]->action_data);
-			delete(this->but[i]);
+	if(this->screen != NULL){
+		this->screen = NULL;
+		TTF_CloseFont(this->font);
+		for(int i = 0; i < COUNT_OF_FONT; i++){
+			TTF_CloseFont(this->TextFont[i]);
 		}
-		this->but[i] = NULL;
+		SDL_FreeSurface(this->back);
+		this->font = NULL;
+		for(int i = 0; i < 256; i++){
+			if(this->but[i] != NULL){
+				if(this->but[i]->action_data)
+					free(this->but[i]->action_data);
+				delete(this->but[i]);
+			}
+			this->but[i] = NULL;
+		}
 	}
 }
 

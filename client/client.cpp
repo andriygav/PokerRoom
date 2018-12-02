@@ -75,6 +75,9 @@ int client_t::show_all_inf(){
 	for(int i = 0; i<6;i++){
 		log(this->fd, "%d", this->player[i].status);	
 	}
+	for(int i = 0; i<6;i++){
+		log(this->fd, "%d", this->final_table[i]);
+	}
 	log(this->fd, "\n");
 	for(int i = 0; i<6;i++){
 		log(this->fd, "%d %d %d\n", this->player[i].comb, this->player[i].card[0], this->player[i].card[1]);	
@@ -149,7 +152,11 @@ client_t::client_t(int status, int sock, bool* argument, int fildis){
 			this->player[i].login[j] = 0;
 		}
 	}
-	this->visual_init();
+	this->screen = NULL;
+	if(!this->argument['T']){
+		this->visual_init();
+	}
+	
 }
 
 int client_t::change_status(struct recivesock* rec){
@@ -230,7 +237,9 @@ int client_t::menu(){
 	}
 
 	class menu scene(this->screen, this);
-	scene.show();
+	if(!this->argument['T']){
+		scene.show();
+	}
 
 	int bytes_read = 0;
 	struct recive_t rbuf;
@@ -261,28 +270,38 @@ int client_t::menu(){
 		((struct menu_scanf_argument_t*)argv)->mut_exit = mut_exit;
 		pthread_create(&menu_scanf_thread, NULL, menu_scanf, argv);
 	}
+
 	pthread_t menu_scene_thread = 0;
-	argv = (struct menu_scene_argument_t*)malloc(sizeof(struct menu_scene_argument_t));
-	((struct menu_scene_argument_t*)argv)->my = this;
-	((struct menu_scene_argument_t*)argv)->mut_exit = mut_exit;
-	((struct menu_scene_argument_t*)argv)->scene = &scene;
-	pthread_create(&menu_scene_thread, NULL, menu_scene, argv);
-	
+	if(!this->argument['T']){
+		argv = (struct menu_scene_argument_t*)malloc(sizeof(struct menu_scene_argument_t));
+		((struct menu_scene_argument_t*)argv)->my = this;
+		((struct menu_scene_argument_t*)argv)->mut_exit = mut_exit;
+		((struct menu_scene_argument_t*)argv)->scene = &scene;
+		pthread_create(&menu_scene_thread, NULL, menu_scene, argv);
+	}
+		
 	pthread_mutex_lock(mut_exit);
+	
 	pthread_cancel(menu_get_info_from_server_thread);
+	
 	if(this->argument['t'])
 		pthread_cancel(menu_scanf_thread);
 
-	SDL_Event event;
-	SDL_memset(&event, 0, sizeof(event));
-   	event.type = SDL_USEREVENT;
-	SDL_PushEvent(&event);
+	if(!this->argument['T']){
+		SDL_Event event;
+		SDL_memset(&event, 0, sizeof(event));
+	   	event.type = SDL_USEREVENT;
+		SDL_PushEvent(&event);
+	}
 
 	pthread_join(menu_get_info_from_server_thread, NULL);
 	if(this->argument['t'])
 		pthread_join(menu_scanf_thread, NULL);
-	pthread_join(menu_scene_thread, NULL);
-	
+
+	if(!this->argument['T']){
+		pthread_join(menu_scene_thread, NULL);
+	}
+
 	pthread_mutex_destroy(mut_exit);
 	free(mut_exit);
 	return 0;
@@ -297,7 +316,9 @@ int client_t::help(){
 	}
 
 	class help scene(this->screen, this, "../client/source/help.help");
-	scene.show();
+	if(!this->argument['T']){
+		scene.show();
+	}
 
 	int bytes_read = 0;
 	struct recive_t rbuf;
@@ -330,26 +351,33 @@ int client_t::help(){
 	}
 
 	pthread_t help_scene_thread = 0;
-	argv = (struct help_scene_argument_t*)malloc(sizeof(struct help_scene_argument_t));
-	((struct help_scene_argument_t*)argv)->my = this;
-	((struct help_scene_argument_t*)argv)->mut_exit = &mut_exit;
-	((struct help_scene_argument_t*)argv)->scene = &scene;
-	pthread_create(&help_scene_thread, NULL, help_scene, argv);
-	
+	if(!this->argument['T']){
+		argv = (struct help_scene_argument_t*)malloc(sizeof(struct help_scene_argument_t));
+		((struct help_scene_argument_t*)argv)->my = this;
+		((struct help_scene_argument_t*)argv)->mut_exit = &mut_exit;
+		((struct help_scene_argument_t*)argv)->scene = &scene;
+		pthread_create(&help_scene_thread, NULL, help_scene, argv);
+	}
+
 	pthread_mutex_lock(&mut_exit);
 	pthread_cancel(help_get_info_from_server_thread);
+	
 	if(this->argument['t'])
 		pthread_cancel(help_scanf_thread);
 
-	SDL_Event event;
-	SDL_memset(&event, 0, sizeof(event));
-   	event.type = SDL_USEREVENT;
-	SDL_PushEvent(&event);
+	if(!this->argument['T']){
+		SDL_Event event;
+		SDL_memset(&event, 0, sizeof(event));
+	   	event.type = SDL_USEREVENT;
+		SDL_PushEvent(&event);
+	}
 
 	pthread_join(help_get_info_from_server_thread, NULL);
 	if(this->argument['t'])
 		pthread_join(help_scanf_thread, NULL);
-	pthread_join(help_scene_thread, NULL);
+	if(!this->argument['T']){
+		pthread_join(help_scene_thread, NULL);
+	}
 
 	pthread_mutex_destroy(&mut_exit);
 	return 0;
@@ -361,9 +389,11 @@ int client_t::game(){
 	if(this->argument['t']){
 		printf("game\n");
 	}
-
 	class game scene(this->screen, this);
-	scene.show();
+	if(!this->argument['T']){
+		scene.show();
+	}
+
 
 	int bytes_read = 0;
 	struct recive_t rbuf;
@@ -378,15 +408,14 @@ int client_t::game(){
 		return 0;	
 	}
 	pthread_mutex_lock(&mut_exit);
-
 	pthread_mutex_t mut_sdl;
-	if(pthread_mutex_init(&mut_sdl, NULL)){
-		log(this->fd, "game mut_sdl - init: %s", strerror(errno));
-		return 0;
+	if(!this->argument['T']){
+		if(pthread_mutex_init(&mut_sdl, NULL)){
+			log(this->fd, "game mut_sdl - init: %s", strerror(errno));
+			return 0;
+		}
 	}
-
 	void* argv;
-	
 	pthread_t game_get_info_from_server_thread = 0;
 	argv = (struct game_get_info_from_server_argument_t*)malloc(sizeof(struct game_get_info_from_server_argument_t));
 	((struct game_get_info_from_server_argument_t*)argv)->my = this;
@@ -394,7 +423,6 @@ int client_t::game(){
 	((struct game_get_info_from_server_argument_t*)argv)->mut_sdl = &mut_sdl;
 	((struct game_get_info_from_server_argument_t*)argv)->scene = &scene;
 	pthread_create(&game_get_info_from_server_thread, NULL, game_get_info_from_server, argv);
-
 	pthread_t game_scanf_thread = 0;
 	if(this->argument['t']){
 		argv = (struct game_scanf_argument_t*)malloc(sizeof(struct game_scanf_argument_t));
@@ -404,33 +432,40 @@ int client_t::game(){
 	}
 
 	pthread_t game_scene_thread = 0;
-	argv = (struct game_scene_argument_t*)malloc(sizeof(struct game_scene_argument_t));
-	((struct game_scene_argument_t*)argv)->my = this;
-	((struct game_scene_argument_t*)argv)->mut_exit = &mut_exit;
-	((struct game_scene_argument_t*)argv)->mut_sdl = &mut_sdl;
-	((struct game_scene_argument_t*)argv)->scene = &scene;
-	pthread_create(&game_scene_thread, NULL, game_scene, argv);
-	
+	if(!this->argument['T']){
+		argv = (struct game_scene_argument_t*)malloc(sizeof(struct game_scene_argument_t));
+		((struct game_scene_argument_t*)argv)->my = this;
+		((struct game_scene_argument_t*)argv)->mut_exit = &mut_exit;
+		((struct game_scene_argument_t*)argv)->mut_sdl = &mut_sdl;
+		((struct game_scene_argument_t*)argv)->scene = &scene;
+		pthread_create(&game_scene_thread, NULL, game_scene, argv);
+	}
 	pthread_mutex_lock(&mut_exit);
-
+	
 	pthread_cancel(game_get_info_from_server_thread);
 	
 	if(this->argument['t'])
 		pthread_cancel(game_scanf_thread);
 
-	SDL_Event event;
-	SDL_memset(&event, 0, sizeof(event));
-   	event.type = SDL_USEREVENT;
-	SDL_PushEvent(&event);
-
+	if(!this->argument['T']){
+		SDL_Event event;
+		SDL_memset(&event, 0, sizeof(event));
+	   	event.type = SDL_USEREVENT;
+		SDL_PushEvent(&event);
+	}
 	pthread_join(game_get_info_from_server_thread, NULL);
 
 	if(this->argument['t'])
 		pthread_join(game_scanf_thread, NULL);
 
-	pthread_join(game_scene_thread, NULL);
+	if(!this->argument['T']){
+		pthread_join(game_scene_thread, NULL);
+	}
 	pthread_mutex_destroy(&mut_exit);
-	pthread_mutex_destroy(&mut_sdl);
+
+	if(!this->argument['T']){
+		pthread_mutex_destroy(&mut_sdl);
+	}
 	return 0;
 }
 

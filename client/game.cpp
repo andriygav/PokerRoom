@@ -246,73 +246,76 @@ int game::show(){
 }
 
 game::game(SDL_Surface* screen, client_t* my){
-	for(int i = 0; i < 256; i++)
-		this->buf[i] = 0;
-	this->back = load_image("../client/VisSource/background.bmp");
-	for(int i = 0; i < 256; i++)
-		this->but[i] = NULL;
+	this->screen = NULL;
 
-	this->slide_raise = NULL;
-	this->slide_getmoney = NULL;
+	if(!my->argument['T']){
+		for(int i = 0; i < 256; i++)
+			this->buf[i] = 0;
+		this->back = load_image("../client/VisSource/background.bmp");
+		for(int i = 0; i < 256; i++)
+			this->but[i] = NULL;
 
-	char name[256];
-	for(int i = 0; i < 256; i++){
-		name[i] = 0;
+		this->slide_raise = NULL;
+		this->slide_getmoney = NULL;
+
+		char name[256];
+		for(int i = 0; i < 256; i++){
+			name[i] = 0;
+		}
+		for(int i = 0; i < 54; i++){
+			sprintf(name, "../client/colum/%d.bmp", i);
+			this->card_texture[i] = load_image(name);
+		}
+
+		this->my = my;
+		this->screen = screen;
+		struct str_t* tmp = NULL;
+		this->font = TTF_OpenFont("../client/VisSource/font.ttf", 24);
+
+		this->slide_raise = new slide(600, 450, 200, 50, "../client/VisSource/slide.bmp", "../client/VisSource/slideback.bmp", "../client/VisSource/line.bmp", this->font);
+		this->slide_raise->status = false;
+		this->slide_getmoney = new slide(600, 210, 200, 50, "../client/VisSource/slide.bmp", "../client/VisSource/slideback.bmp", "../client/VisSource/line.bmp", this->font);
+		this->slide_getmoney->status = false;
+		this->slide_putmoney = new slide(600, 300, 200, 50, "../client/VisSource/slide.bmp", "../client/VisSource/slideback.bmp", "../client/VisSource/line.bmp", this->font);
+		this->slide_putmoney->status = false;
+
+
+		tmp = set_str_t(my, "exit", NULL);
+		this->but[0] = new button(600, 0, 200, 30, "../client/VisSource/button.bmp", "exit", this->font, (void *)game_button_click_func, tmp);
+
+	 	tmp = set_str_t(my, "menu", NULL);
+		this->but[1] = new button(600, 35, 200, 30, "../client/VisSource/button.bmp", "menu", this->font, (void *)game_button_click_func, tmp);
+
+	 	tmp = set_str_t(my, "help", NULL);
+		this->but[2] = new button(600, 70, 200, 30, "../client/VisSource/button.bmp", "help", this->font, (void *)game_button_click_func, tmp);
+
+	 	tmp = set_str_t(my, "disconnect", NULL);
+		this->but[3] = new button(600, 105, 200, 30, "../client/VisSource/button.bmp", "disconnect", this->font, (void *)game_button_click_func, tmp);
+
+		tmp = set_str_t(my, "new", NULL);
+		this->but[4] = new button(600, 140, 200, 30, "../client/VisSource/button.bmp", "new game", this->font, (void *)game_button_click_func, tmp);
+		this->but[4]->status = false;
+
+		tmp = set_str_t(my, "call", NULL);
+		this->but[5] = new button(600, 500, 200, 30, "../client/VisSource/button.bmp", "call", this->font, (void *)game_button_click_func, tmp);
+		this->but[5]->status = false;
+
+	 	tmp = set_str_t(my, "raise", this->slide_raise);
+		this->but[6] = new button(600, 535, 200, 30, "../client/VisSource/button.bmp", "raise", this->font, (void *)game_button_click_func, tmp);
+		this->but[6]->status = false;	
+		
+		tmp = set_str_t(my, "fold", NULL);
+		this->but[7] = new button(600, 570, 200, 30, "../client/VisSource/button.bmp", "fold", this->font, (void *)game_button_click_func, tmp);
+		this->but[7]->status = false;
+
+		tmp = set_str_t(my, "getmoney", this->slide_getmoney);
+		this->but[8] = new button(600, 175, 200, 30, "../client/VisSource/button.bmp", "get money", this->font, (void *)game_button_click_func, tmp);
+		this->but[8]->status = false;
+
+		tmp = set_str_t(my, "putmoney", this->slide_putmoney);
+		this->but[9] = new button(600, 265, 200, 30, "../client/VisSource/button.bmp", "put money", this->font, (void *)game_button_click_func, tmp);
+		this->but[9]->status = false;
 	}
-	for(int i = 0; i < 54; i++){
-		sprintf(name, "../client/colum/%d.bmp", i);
-		this->card_texture[i] = load_image(name);
-	}
-
-	this->my = my;
-	this->screen = screen;
-	struct str_t* tmp = NULL;
-	this->font = TTF_OpenFont("../client/VisSource/font.ttf", 24);
-
-	this->slide_raise = new slide(600, 450, 200, 50, "../client/VisSource/slide.bmp", "../client/VisSource/slideback.bmp", "../client/VisSource/line.bmp", this->font);
-	this->slide_raise->status = false;
-	this->slide_getmoney = new slide(600, 210, 200, 50, "../client/VisSource/slide.bmp", "../client/VisSource/slideback.bmp", "../client/VisSource/line.bmp", this->font);
-	this->slide_getmoney->status = false;
-	this->slide_putmoney = new slide(600, 300, 200, 50, "../client/VisSource/slide.bmp", "../client/VisSource/slideback.bmp", "../client/VisSource/line.bmp", this->font);
-	this->slide_putmoney->status = false;
-
-
-	tmp = set_str_t(my, "exit", NULL);
-	this->but[0] = new button(600, 0, 200, 30, "../client/VisSource/button.bmp", "exit", this->font, (void *)game_button_click_func, tmp);
-
- 	tmp = set_str_t(my, "menu", NULL);
-	this->but[1] = new button(600, 35, 200, 30, "../client/VisSource/button.bmp", "menu", this->font, (void *)game_button_click_func, tmp);
-
- 	tmp = set_str_t(my, "help", NULL);
-	this->but[2] = new button(600, 70, 200, 30, "../client/VisSource/button.bmp", "help", this->font, (void *)game_button_click_func, tmp);
-
- 	tmp = set_str_t(my, "disconnect", NULL);
-	this->but[3] = new button(600, 105, 200, 30, "../client/VisSource/button.bmp", "disconnect", this->font, (void *)game_button_click_func, tmp);
-
-	tmp = set_str_t(my, "new", NULL);
-	this->but[4] = new button(600, 140, 200, 30, "../client/VisSource/button.bmp", "new game", this->font, (void *)game_button_click_func, tmp);
-	this->but[4]->status = false;
-
-	tmp = set_str_t(my, "call", NULL);
-	this->but[5] = new button(600, 500, 200, 30, "../client/VisSource/button.bmp", "call", this->font, (void *)game_button_click_func, tmp);
-	this->but[5]->status = false;
-
- 	tmp = set_str_t(my, "raise", this->slide_raise);
-	this->but[6] = new button(600, 535, 200, 30, "../client/VisSource/button.bmp", "raise", this->font, (void *)game_button_click_func, tmp);
-	this->but[6]->status = false;	
-	
-	tmp = set_str_t(my, "fold", NULL);
-	this->but[7] = new button(600, 570, 200, 30, "../client/VisSource/button.bmp", "fold", this->font, (void *)game_button_click_func, tmp);
-	this->but[7]->status = false;
-
-	tmp = set_str_t(my, "getmoney", this->slide_getmoney);
-	this->but[8] = new button(600, 175, 200, 30, "../client/VisSource/button.bmp", "get money", this->font, (void *)game_button_click_func, tmp);
-	this->but[8]->status = false;
-
-	tmp = set_str_t(my, "putmoney", this->slide_putmoney);
-	this->but[9] = new button(600, 265, 200, 30, "../client/VisSource/button.bmp", "put money", this->font, (void *)game_button_click_func, tmp);
-	this->but[9]->status = false;
-
 }
 
 int game::action(SDL_Event* event){
@@ -346,36 +349,39 @@ int game::action(SDL_Event* event){
 			}
 		}
 	}
+	return 0;
 }
 
 
 game::~game(){
-	this->screen = NULL;
-	TTF_CloseFont(this->font);
-	SDL_FreeSurface(this->back);
-	this->font = NULL;
-	for(int i = 0; i < 256; i++){
-		if(this->but[i] != NULL){
-			if(this->but[i]->action_data)
-				free(this->but[i]->action_data);
-			delete(this->but[i]);
+	if(this->screen != NULL){
+		this->screen = NULL;
+		TTF_CloseFont(this->font);
+		SDL_FreeSurface(this->back);
+		this->font = NULL;
+		for(int i = 0; i < 256; i++){
+			if(this->but[i] != NULL){
+				if(this->but[i]->action_data)
+					free(this->but[i]->action_data);
+				delete(this->but[i]);
+			}
+			this->but[i] = NULL;
 		}
-		this->but[i] = NULL;
-	}
-	if(this->slide_raise){
-		delete(this->slide_raise);
-		this->slide_raise = NULL;
-	}
-	if(this->slide_getmoney){
-		delete(this->slide_getmoney);
-		this->slide_getmoney = NULL;
-	}
-	if(this->slide_putmoney){
-		delete(this->slide_putmoney);
-		this->slide_getmoney = NULL;
-	}
-	for(int i = 0; i < 54; i++){
-		SDL_FreeSurface(this->card_texture[i]);
+		if(this->slide_raise){
+			delete(this->slide_raise);
+			this->slide_raise = NULL;
+		}
+		if(this->slide_getmoney){
+			delete(this->slide_getmoney);
+			this->slide_getmoney = NULL;
+		}
+		if(this->slide_putmoney){
+			delete(this->slide_putmoney);
+			this->slide_getmoney = NULL;
+		}
+		for(int i = 0; i < 54; i++){
+			SDL_FreeSurface(this->card_texture[i]);
+		}
 	}
 }
 
@@ -411,35 +417,36 @@ void* game_get_info_from_server(void* arguments){
 			my->rewrite(&(rec.inf));
 			my->show_all_inf();
 
-			if(!my->cheak_pok_status(STATUS_ACTIVE)){
-				scene->but[5]->status = false;
-				scene->but[6]->status = false;
-				scene->but[7]->status = false;
-				scene->slide_raise->status = false;
-			}else{
-				scene->but[5]->status = true;
-				scene->but[6]->status = true;
-				scene->but[7]->status = true;
-				scene->slide_raise->status = true;	
-			}
+			if(!my->argument['T']){
+				if(!my->cheak_pok_status(STATUS_ACTIVE)){
+					scene->but[5]->status = false;
+					scene->but[6]->status = false;
+					scene->but[7]->status = false;
+					scene->slide_raise->status = false;
+				}else{
+					scene->but[5]->status = true;
+					scene->but[6]->status = true;
+					scene->but[7]->status = true;
+					scene->slide_raise->status = true;	
+				}
 
-			if(my->cheak_pok_status(STATUS_AFTER_GAME) || my->cheak_pok_status(STATUS_WINER)){
-				scene->but[4]->status = true;
-				scene->but[8]->status = true;
-				scene->but[9]->status = true;
-				scene->slide_getmoney->status = true;
-				scene->slide_putmoney->status = true;
-			}else{
-				scene->but[4]->status = false;
-				scene->but[8]->status = false;
-				scene->but[9]->status = false;
-				scene->slide_getmoney->status = false;
-				scene->slide_putmoney->status = false;
+				if(my->cheak_pok_status(STATUS_AFTER_GAME) || my->cheak_pok_status(STATUS_WINER)){
+					scene->but[4]->status = true;
+					scene->but[8]->status = true;
+					scene->but[9]->status = true;
+					scene->slide_getmoney->status = true;
+					scene->slide_putmoney->status = true;
+				}else{
+					scene->but[4]->status = false;
+					scene->but[8]->status = false;
+					scene->but[9]->status = false;
+					scene->slide_getmoney->status = false;
+					scene->slide_putmoney->status = false;
+				}
+				pthread_mutex_lock(mut_sdl);
+				scene->show();
+				pthread_mutex_unlock(mut_sdl);
 			}
-			pthread_mutex_lock(mut_sdl);
-			scene->show();
-			pthread_mutex_unlock(mut_sdl);
-			
 
 		}else if(rec.code == SERVER_DISCONNECT_YOU){
 			sprintf(rbuf.buf, "disconnect");

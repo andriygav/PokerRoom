@@ -230,13 +230,12 @@ void* poker(void* argumets){
 
 //	pthread_mutex_lock(&(tb->mut_read_client));
 	cl->fd_poker_log = open(str, O_CREAT|O_RDWR|O_APPEND, 0666);
-	cl->offset = lseek(cl->fd_poker_log, 0, SEEK_END);
-//	pthread_mutex_unlock(&(tb->mut_read_client));
-
 	if(cl->fd_poker_log < 0){
 		perror(str);
 		return NULL;
 	}
+	cl->offset = lseek(cl->fd_poker_log, 0, SEEK_END);
+//	pthread_mutex_unlock(&(tb->mut_read_client));
 	log(cl->fd_poker_log, "--------------------------------------------------\n", num);
 	log(cl->fd_poker_log, "open poker room %d correct\n", num);
 

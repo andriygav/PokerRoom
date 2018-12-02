@@ -41,17 +41,21 @@ int set_arguments(bool* argument, int argc, char** argv){
         };
 
 	int a = 0;
-
-	while((val = getopt_long(argc, argv, "t", long_options, &a)) != -1){
+	optind = 1;
+	while((val = getopt_long(argc, argv, "Ttp:a:", long_options, &a)) != -1){
 		if(val == '?'){
 			printf("Try '%s --help' for more information.\n", argv[0]);
 			goto out;
 		}
 		argument[val] = true;
+		if(val == 'T'){
+			argument['t'] = true;
+		}
 	}
 out:
 	return ret;
 }
+#undef main
 
 int main(int argc, char **argv){
 	std::cin.clear();
@@ -62,6 +66,26 @@ int main(int argc, char **argv){
 		argument[i] = false;
 	}
 	set_arguments(argument, argc, argv);
+
+	int given_port = 3425;
+	char* given_addres = "127.0.0.1";
+
+	optind = 1;
+	optarg = NULL;
+	int opt = 0;
+	while((opt = getopt(argc, argv, "p:a:")) != -1) {
+		switch (opt){
+			case 'p':
+				given_port = atoi(optarg);
+				optarg = NULL;
+				break;
+			case 'a':
+				given_addres = optarg;
+				break;
+			default:
+				break;
+		}
+	}
 
 	char str[256];
 	for(int i = 0; i < 256; i++){
@@ -82,8 +106,8 @@ int main(int argc, char **argv){
 	}
 
 	addr.sin_family = AF_INET;
-	addr.sin_port = htons(3425/*atoi(argv[1])*/);
-	addr.sin_addr.s_addr = inet_addr("127.0.0.1"/*argv[2]*/);
+	addr.sin_port = htons(given_port);
+	addr.sin_addr.s_addr = inet_addr(given_addres);
 	if(connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0){
 		log(fd, "Connect: %s", strerror(errno));
 		return 1;

@@ -84,22 +84,26 @@ int menu::show(){
 			this->but[i]->drow(this->screen);
 	};
 	SDL_Flip(this->screen);
+	return 0;
 }
 
 menu::menu(SDL_Surface* screen, client_t* my){
-	this->back = load_image("../client/VisSource/background.bmp");
-	for(int i = 0; i < 256; i++)
-		this->but[i] = NULL;
-	this->my = my;
-	this->screen = screen;
-	struct str_t* tmp = NULL;
-	this->font = TTF_OpenFont("../client/VisSource/font.ttf", 24);
- 	tmp = set_str_t(this->my, "exit");
-	this->but[0] = new button(600, 0, 200, 30, "../client/VisSource/button.bmp", "exit", this->font, (void *)menu_button_click_func, tmp);
- 	tmp = set_str_t(this->my, "help");
-	this->but[1] = new button(600, 35, 200, 30, "../client/VisSource/button.bmp", "help", this->font, (void *)menu_button_click_func, tmp);
- 	tmp = set_str_t(this->my, "game");
-	this->but[2] = new button(600, 70, 200, 30, "../client/VisSource/button.bmp", "game", this->font, (void *)menu_button_click_func, tmp);
+	this->screen = NULL;
+	if(!my->argument['T']){
+		this->back = load_image("../client/VisSource/background.bmp");
+		for(int i = 0; i < 256; i++)
+			this->but[i] = NULL;
+		this->my = my;
+		this->screen = screen;
+		struct str_t* tmp = NULL;
+		this->font = TTF_OpenFont("../client/VisSource/font.ttf", 24);
+	 	tmp = set_str_t(this->my, "exit");
+		this->but[0] = new button(600, 0, 200, 30, "../client/VisSource/button.bmp", "exit", this->font, (void *)menu_button_click_func, tmp);
+	 	tmp = set_str_t(this->my, "help");
+		this->but[1] = new button(600, 35, 200, 30, "../client/VisSource/button.bmp", "help", this->font, (void *)menu_button_click_func, tmp);
+	 	tmp = set_str_t(this->my, "game");
+		this->but[2] = new button(600, 70, 200, 30, "../client/VisSource/button.bmp", "game", this->font, (void *)menu_button_click_func, tmp);
+	}
 }
 
 int menu::action(SDL_Event* event){
@@ -111,20 +115,23 @@ int menu::action(SDL_Event* event){
 			}
 		}
 	}
+	return 0;
 }
 
 menu::~menu(){
-	this->screen = NULL;
-	TTF_CloseFont(this->font);
-	SDL_FreeSurface(this->back);
-	this->font = NULL;
-	for(int i = 0; i < 256; i++){
-		if(this->but[i] != NULL){
-			if(this->but[i]->action_data)
-				free(this->but[i]->action_data);
-			delete(this->but[i]);
+	if(this->screen != NULL){
+		this->screen = NULL;
+		TTF_CloseFont(this->font);
+		SDL_FreeSurface(this->back);
+		this->font = NULL;
+		for(int i = 0; i < 256; i++){
+			if(this->but[i] != NULL){
+				if(this->but[i]->action_data)
+					free(this->but[i]->action_data);
+				delete(this->but[i]);
+			}
+			this->but[i] = NULL;
 		}
-		this->but[i] = NULL;
 	}
 }
 
@@ -137,7 +144,7 @@ void* menu_get_info_from_server(void* arguments){
 	struct recivesock rec;
 	while(1){
 		if(recv(my->sock, &rec, sizeof(rec), 0) == 0){
-			log(my->fd, "Lost conection whith server\n");
+			log(my->fd, "Lost conection with server\n");
 			my->status = EXIT;
 			pthread_mutex_unlock(mut_exit);
 			return NULL;

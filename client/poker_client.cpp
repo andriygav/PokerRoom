@@ -73,7 +73,7 @@ int main(int argc, char **argv){
 	optind = 1;
 	optarg = NULL;
 	int opt = 0;
-	while((opt = getopt(argc, argv, "p:a:")) != -1) {
+	while((opt = getopt(argc, argv, "Ttp:a:")) != -1) {
 		switch (opt){
 			case 'p':
 				given_port = atoi(optarg);

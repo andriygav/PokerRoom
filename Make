@@ -59,4 +59,4 @@ client:
 	ar -r client/libbutton.a client/button.o
 	g++ -c client/slide.cpp -o client/slide.o
 	ar -r client/libslide.a client/slide.o
-	g++ client/poker_client.cpp -o bin/client client/libclient.a client/libmenu.a client/libhelp.a client/libgame.a client/libslide.a client/libbutton.a -lSDL -lSDL_ttf -lpthread
+	g++ client/poker_client.cpp -o bin/client client/libclient.a client/libmenu.a client/libhelp.a client/libgame.a client/libslide.a client/libbutton.a -lSDL -lSDL_ttf -lpthread -lreadline

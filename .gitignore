@@ -28,6 +28,17 @@
 *.x86_64
 *.hex
 
-/bin/*
+bin/*
+lib/*
 *.txt
 callgrind.out.*
+
+**/cmake-build-debug
+**/CMakeCache.txt
+**/cmake_install.cmake
+**/install_manifest.txt
+**/CMakeFiles/
+**/CTestTestfile.cmake
+**/Makefile
+**/*.cbp
+**/CMakeScripts

@@ -22,8 +22,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <stdarg.h>
 #include "admin.h"
-
 #include <readline/readline.h>
 #include <readline/history.h>
 
@@ -39,8 +39,10 @@ static int log(int md, const char* format, ...){
 	return 0;
 }
 
+
 static const char *newEnv[] = {
 	"exit",
+	"restart",
 	NULL
 };
 
@@ -99,6 +101,11 @@ static void* menu_scanf(void* arguments){
 			send(my->sock, &sendbuf, sizeof(sendbuf), 0);
 			goto out;
 		}
+		if(!strncmp(sendbuf, "restart", 7)){
+			my->status = EXIT;
+			send(my->sock, &sendbuf, sizeof(sendbuf), 0);
+			goto out;
+		}
 	}
 out:
 	if(buf != NULL){
@@ -131,9 +138,7 @@ admin_t::admin_t(int status, int sock, bool* argument, int fd){
 	}
 }
 
-admin_t::~admin_t(){
-
-}
+admin_t::~admin_t(){}
 
 
 

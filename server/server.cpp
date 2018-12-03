@@ -720,6 +720,9 @@ whil:
 			pthread_mutex_unlock(&(tb->mut_read_client));
 			return nullptr;
 	    }
+      if(!strncmp(buf, "restart", 7)){
+        printf("%s\n", "restart\n");
+      }
 	}
 }
 

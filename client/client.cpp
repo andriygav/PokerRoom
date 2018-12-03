@@ -510,4 +510,3 @@ int client_t::game(){
 	}
 	return 0;
 }
-

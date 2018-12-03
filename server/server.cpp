@@ -14,6 +14,71 @@
 #define FROM_TO_TABLE 1025
 #define SERVER_DISCONNECT_YOU 1026
 
+static char** get_argv(const char* buf, size_t* count) {
+  size_t len = strlen(buf);
+  char** argv = (char**)malloc((len + 1) * sizeof(char*));
+  size_t j = 0;
+  if (argv == NULL) {
+    goto out_get_argv;
+  }
+  for (int i = 0; i < len + 1; i++) {
+    argv[i] = NULL;
+  }
+  *count = 0;
+
+  argv[*count] = (char*)malloc((len + 1) * sizeof(char));
+
+  if (argv[*count] == NULL) {
+    goto out_get_argv;
+  }
+
+  for (size_t i = 0; i < (len + 1); i++) {
+    argv[*count][i] = 0;
+  }
+
+  for (size_t i = 0; i < len; i++) {
+    if (buf[i] == ' ') {
+      while ((buf[i] == ' ' || buf[i] == '\t') && i < len) {
+        i++;
+      }
+      i--;
+    }
+
+    argv[*count][j] = buf[i];
+    if (buf[i] == ' ') {
+      argv[*count][j] = 0;
+      (*count)++;
+      argv[*count] = (char*)malloc((len + 1) * sizeof(char));
+      if (argv[*count] == NULL) {
+        goto out_get_argv;
+      }
+      for (size_t i = 0; i < len + 1; i++) {
+        argv[*count][i] = 0;
+      }
+      j = -1;
+    }
+    j++;
+  }
+  argv[*count][j] = 0;
+  (*count)++;
+
+  return argv;
+
+out_get_argv:
+  if (argv != NULL) {
+    for (size_t i = 0; i < len + 1; i++) {
+      if (argv[i] != NULL) {
+        free(argv[i]);
+        argv[i] = NULL;
+      }
+    }
+    free(argv);
+    argv = NULL;
+  }
+
+  return nullptr;
+}
+
 size_t next_id(size_t id) {
   size_t ret = id;
   size_t old_id = id;
@@ -590,6 +655,74 @@ int create_room(struct table_t* tb, int md, int num, FILE* file) {
   return 0;
 }
 
+
+
+#pragma pack(push, 1)
+struct admin_argumets_t {
+  int sock;
+  int md;
+  struct table_t* tb;
+};
+#pragma pack(pop)
+
+void* admin(void* arguments){
+	int sock = ((struct admin_argumets_t*)arguments)->sock;
+	int md = ((struct admin_argumets_t*)arguments)->md;
+	struct table_t* tb = ((struct admin_argumets_t*)arguments)->tb;
+	free(((struct client_argumets_t*)arguments));
+
+	char buf[256];
+	for(int i = 0; i < 256; i++){
+		buf[i] = 0;
+	}
+
+	sprintf(buf, "log/ServerAdmin.log");
+    int fd = open(buf, O_CREAT | O_RDWR | O_APPEND, 0666);
+
+    int bytes_read = -1;
+
+	char** argv = NULL;
+	size_t argc = 0;
+
+
+	while(1){
+whil:		
+		if(argv != NULL){
+			for(size_t i = 0; i < argc; i++){
+				if(argv[i] != NULL){
+					free(argv[i]);
+					argv[i] = NULL;
+				}
+			}
+			free(argv);
+			argv = NULL;
+			argc = 0;
+		}
+
+	    bytes_read = recv(sock, &buf, sizeof(buf), 0);
+	    if (bytes_read == 0) {
+			close(sock);
+			pthread_mutex_lock(&(tb->mut_read_client));
+			tb->admin = 0;
+			pthread_mutex_unlock(&(tb->mut_read_client));
+			return nullptr;
+	    }
+
+	    argc = 0;
+		optind = 1;
+		argv = get_argv(buf, &argc);
+
+	    log(fd, "admin: \"%s\"\n", buf);
+	    if (!strncmp(buf, "exit", 4)) {
+			close(sock);
+			pthread_mutex_lock(&(tb->mut_read_client));
+			tb->admin = 0;
+			pthread_mutex_unlock(&(tb->mut_read_client));
+			return nullptr;
+	    }
+	}
+}
+
 #define ADMIN 0
 #define CLIENT 1
 
@@ -673,13 +806,32 @@ int start_server(int port, const char* adr, int md, struct table_t* tb) {
 	      tb->thread_client[k] = 0;
 	      pthread_create(&(tb->thread_client[k]), NULL, client, (void*)argv);
 	      pthread_detach(tb->thread_client[k]);
+	    }else{
+	      close(sock);
 	    }
 	}else if(authent_rec.status == ADMIN){
-		close(sock);
-		/*
-		Your code here
-		Here you need to create new function for telling with admin client
-		*/
+
+		  int flag = 0;
+
+		  pthread_mutex_lock(&(tb->mut_read_client));
+		  if(tb->admin == 0){
+		  	flag = 1;
+		  	tb->admin = 1;
+		  }
+		  pthread_mutex_unlock(&(tb->mut_read_client));
+
+		  if(flag == 1){
+			  struct admin_argumets_t* argv =
+		          (struct admin_argumets_t*)malloc(sizeof(struct admin_argumets_t));
+		      argv->sock = sock;
+		      argv->md = md;
+		      argv->tb = tb;
+		      tb->thread_admin = 0;
+		      pthread_create(&(tb->thread_admin), NULL, admin, (void*)argv);
+		      pthread_detach(tb->thread_admin);
+	      }else{
+	      	close(sock);
+	      }
 	}
 
   }
@@ -956,71 +1108,6 @@ static int show_stat(int num, struct table_t* tb) {
   close(fd);
 
   return 0;
-}
-
-static char** get_argv(const char* buf, size_t* count) {
-  size_t len = strlen(buf);
-  char** argv = (char**)malloc((len + 1) * sizeof(char*));
-  size_t j = 0;
-  if (argv == NULL) {
-    goto out_get_argv;
-  }
-  for (int i = 0; i < len + 1; i++) {
-    argv[i] = NULL;
-  }
-  *count = 0;
-
-  argv[*count] = (char*)malloc((len + 1) * sizeof(char));
-
-  if (argv[*count] == NULL) {
-    goto out_get_argv;
-  }
-
-  for (size_t i = 0; i < (len + 1); i++) {
-    argv[*count][i] = 0;
-  }
-
-  for (size_t i = 0; i < len; i++) {
-    if (buf[i] == ' ') {
-      while ((buf[i] == ' ' || buf[i] == '\t') && i < len) {
-        i++;
-      }
-      i--;
-    }
-
-    argv[*count][j] = buf[i];
-    if (buf[i] == ' ') {
-      argv[*count][j] = 0;
-      (*count)++;
-      argv[*count] = (char*)malloc((len + 1) * sizeof(char));
-      if (argv[*count] == NULL) {
-        goto out_get_argv;
-      }
-      for (size_t i = 0; i < len + 1; i++) {
-        argv[*count][i] = 0;
-      }
-      j = -1;
-    }
-    j++;
-  }
-  argv[*count][j] = 0;
-  (*count)++;
-
-  return argv;
-
-out_get_argv:
-  if (argv != NULL) {
-    for (size_t i = 0; i < len + 1; i++) {
-      if (argv[i] != NULL) {
-        free(argv[i]);
-        argv[i] = NULL;
-      }
-    }
-    free(argv);
-    argv = NULL;
-  }
-
-  return nullptr;
 }
 
 static const char *newEnv[] = {

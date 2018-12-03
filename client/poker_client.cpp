@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include "client.h"
+#include "admin.h"
 
 static int log(int md, const char* format, ...){
 	char str[256];
@@ -166,10 +167,16 @@ int main(int argc, char **argv){
 			}
 		}
 	}else{
-		close(sock);
-		/*
-		Your code here need to create new client who can to telling with client
-		*/
+		admin_t obj(MENU, sock, argument, fd);
+		while(1){
+			switch(obj.status){
+				case MENU:
+					obj.menu();
+					break;
+				default:
+					goto out;
+			}
+		}
 	}
 out:
 	close(fd);

@@ -1,5 +1,6 @@
 add_library(Clientlib
         client.cpp
+	admin.cpp
         menu.cpp
         help.cpp
         game.cpp

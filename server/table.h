@@ -101,6 +101,8 @@ struct table_t {
   char login[MAX_CLIENT_NUM][256];
   pthread_t thread_poker[COUNT_OF_ROOM];
   pthread_t thread_client[MAX_CLIENT_NUM];
+  char admin;
+  pthread_t thread_admin;
   pthread_mutex_t mut_read_client;
 };
 #pragma pack(pop)

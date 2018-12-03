@@ -71,4 +71,3 @@ public:
 	SDL_Surface* screen;
 };
 
-

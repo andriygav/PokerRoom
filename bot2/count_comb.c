@@ -33,245 +33,213 @@
 #define CARD_A 12
 
 struct card{
-	int num;	
-	int value;
-	int suit;
+  int num;
+  int value;
+  int suit;
 };
 
 int ret_hight(int x){
-	if (x != -1)
-		return (x%13);
-	return -1;
+  if (x != -1)
+    return (x%13);
+  return -1;
 }
 int ret_mast(int x){
-	if (x != -1)
-		return (x/13);
-	return -1;
+  if (x != -1)
+    return (x/13);
+  return -1;
 }
 
 int is_Kicker(struct card a[]){
-	return a[0].value;
+  return a[0].value;
 }
 
 int is_OnePair(struct card a[], int n){
-	for (int i=0; i < n-1; i++){
-		if (a[i].value == a[i+1].value && (a[i].num != -1))
-			return a[i].value;
-	}
-	return -1;
+  for (int i=0; i < n-1; i++){
+    if (a[i].value == a[i+1].value && (a[i].num != -1))
+      return a[i].value;
+  }
+  return -1;
 }
 
 int is_TwoPairs(struct card a[], int n){
 
-	int fir_pair = 0;
-	for (int i=0; i < n-1; i++){
-		if (a[i].value == a[i+1].value && (a[i].num != -1)){
-			fir_pair = a[i].value;
-			break;
-		}
-	}
-	for (int i=0; i < n-1; i++){
-		if (a[i].value == a[i+1].value && (a[i].num != -1) && (a[i].value != fir_pair))
-			return fir_pair;
-	}
-	return -1;
+  int fir_pair = 0;
+  for (int i=0; i < n-1; i++){
+    if (a[i].value == a[i+1].value && (a[i].num != -1)){
+      fir_pair = a[i].value;
+      break;
+    }
+  }
+  for (int i=0; i < n-1; i++){
+    if (a[i].value == a[i+1].value && (a[i].num != -1) && (a[i].value != fir_pair))
+      return fir_pair;
+  }
+  return -1;
 }
 
 int is_Set(struct card a[], int n){
-	for (int i=0; i < n-2; i++){
-		if ((a[i].value == a[i+1].value) && (a[i+2].value == a[i+1].value) && (a[i].num != -1))
-			return a[i].value;
-	}
-	return -1;
+  for (int i=0; i < n-2; i++){
+    if ((a[i].value == a[i+1].value) && (a[i+2].value == a[i+1].value) && (a[i].num != -1))
+      return a[i].value;
+  }
+  return -1;
 }
 
 int is_Straight(struct card a[], int n){
-	int max = 0, count = 0;
-	for (int i=0; i < n - 1; i++){
-		if ((a[i].value - a[i+1].value <= 1)){
-			count++;
-			if (count == 5)
-				return a[i-4].value;
-		}
-		else count = 0;
-	}
-	return -1;
+  int max = 0, count = 0;
+  for (int i=0; i < n - 1; i++){
+    if ((a[i].value - a[i+1].value <= 1)){
+      count++;
+      if (count == 5)
+        return a[i-4].value;
+    }
+    else count = 0;
+  }
+  return -1;
 }
 
 int is_Flush(struct card a[], int n){
 
-	int count[4] = {0,0,0,0};
-	for(int i = 0; i < n; i++){
-		switch (a[i].suit){
-		case 0: count[0]++; break;
-		case 1: count[1]++; break;
-		case 2: count[2]++; break;
-		case 3: count[3]++; break;
-		}
-	}
-	
-	for (int i = 0; i < 4; i++)
-		if (count[i] >=5)
-			for (int j = 0; j < 3; j++)
-				if (a[j].suit == i)
-					return a[i].value;
+  int count[4] = {0,0,0,0};
+  for(int i = 0; i < n; i++){
+    switch (a[i].suit){
+      case 0: count[0]++; break;
+      case 1: count[1]++; break;
+      case 2: count[2]++; break;
+      case 3: count[3]++; break;
+    }
+  }
 
-	return -1;
+  for (int i = 0; i < 4; i++)
+    if (count[i] >=5)
+      for (int j = 0; j < 3; j++)
+        if (a[j].suit == i)
+          return a[i].value;
+
+  return -1;
 }
 
 int is_FullHouse(struct card a[], int n){
-	int set = is_Set(a,n);
-	int pair = is_OnePair(a,n);
-	if (set && pair && set != pair)
-		return set;
-	return -1;
+  int set = is_Set(a,n);
+  int pair = is_OnePair(a,n);
+  if (set && pair && set != pair)
+    return set;
+  return -1;
 }
 
 int is_Quads(struct card a[], int n){
-	for (int i=0; i < n-4; i++){
-		if ((a[i].value == a[i+1].value) && (a[i+2].value == a[i+1].value) && (a[i+2].value == a[i+3].value) && (a[i].num != -1))
-			return a[i].value;
-	}
-	return -1;
+  for (int i=0; i < n-4; i++){
+    if ((a[i].value == a[i+1].value) && (a[i+2].value == a[i+1].value) && (a[i+2].value == a[i+3].value) && (a[i].num != -1))
+      return a[i].value;
+  }
+  return -1;
 }
 
 int is_StraightFlush(struct card a[], int n){
-	int count = 0;
-	for (int i=0; i < n - 1; i++){
-		if ((a[i].value - a[i+1].value <= 1) && (a[i].suit == a[i+1].suit)){
-			count++;
-			if (count == 5)
-				return a[i-4].value;
-		}
-		else count = 0;
-	}
-	return -1;
+  int count = 0;
+  for (int i=0; i < n - 1; i++){
+    if ((a[i].value - a[i+1].value <= 1) && (a[i].suit == a[i+1].suit)){
+      count++;
+      if (count == 5)
+        return a[i-4].value;
+    }
+    else count = 0;
+  }
+  return -1;
 }
 
 int is_RoyalFlush(struct card a[], int n){
 
-	if(is_Straight(a, n) == CARD_A && is_Flush(a, n) == CARD_A)
-		return CARD_A;
-	return -1;
+  if(is_Straight(a, n) == CARD_A && is_Flush(a, n) == CARD_A)
+    return CARD_A;
+  return -1;
 
 }
 
 void sortcard(struct card a[], int n){
-	struct card tmp = {0,0,0};
-	for (int i = 0; i < n; i++)
-		for(int j = n-1; j > i; j--){
-			if(a[i].value < a[j].value){
-				tmp = a[i];
-				a[i] = a[j];
-				a[j] = tmp;
-			}
-			if(a[i].value == a[j].value && a[i].num < a[j].num){
-				tmp = a[i];
-				a[i] = a[j];
-				a[j] = tmp;
-			}
-		}
+  struct card tmp = {0,0,0};
+  for (int i = 0; i < n; i++)
+    for(int j = n-1; j > i; j--){
+      if(a[i].value < a[j].value){
+        tmp = a[i];
+        a[i] = a[j];
+        a[j] = tmp;
+      }
+      if(a[i].value == a[j].value && a[i].num < a[j].num){
+        tmp = a[i];
+        a[i] = a[j];
+        a[j] = tmp;
+      }
+    }
 }
 char* conv(char* str,int num){
-	//char str[2];
-	int hei = ret_hight(num);
-	switch(hei){
-		case CARD_A: sprintf(str, "A"); break;
-		case CARD_K: sprintf(str, "K"); break;
-		case CARD_Q: sprintf(str, "Q"); break;
-		case CARD_J: sprintf(str, "J"); break;
-		case CARD_T: sprintf(str, "T"); break;
-		case CARD_9: sprintf(str, "9"); break;
-		case CARD_8: sprintf(str, "8"); break;
-		case CARD_7: sprintf(str, "7"); break;
-		case CARD_6: sprintf(str, "6"); break;
-		case CARD_5: sprintf(str, "5"); break;
-		case CARD_4: sprintf(str, "4"); break;
-		case CARD_3: sprintf(str, "3"); break;
-		case CARD_2: sprintf(str, "2"); break;
-		default: sprintf(str, "-"); break;
-	}
-	int mast = ret_mast(num);
-	switch(mast){
-		case 0: sprintf(str+1, "S"); break;
-		case 1: sprintf(str+1, "H"); break;
-		case 2: sprintf(str+1, "C"); break;
-		case 3: sprintf(str+1, "D"); break;
-		default: sprintf(str+1, "1"); break;
-	}
-	//return str;
+  //char str[2];
+  int hei = ret_hight(num);
+  switch(hei){
+    case CARD_A: sprintf(str, "A"); break;
+    case CARD_K: sprintf(str, "K"); break;
+    case CARD_Q: sprintf(str, "Q"); break;
+    case CARD_J: sprintf(str, "J"); break;
+    case CARD_T: sprintf(str, "T"); break;
+    case CARD_9: sprintf(str, "9"); break;
+    case CARD_8: sprintf(str, "8"); break;
+    case CARD_7: sprintf(str, "7"); break;
+    case CARD_6: sprintf(str, "6"); break;
+    case CARD_5: sprintf(str, "5"); break;
+    case CARD_4: sprintf(str, "4"); break;
+    case CARD_3: sprintf(str, "3"); break;
+    case CARD_2: sprintf(str, "2"); break;
+    default: sprintf(str, "-"); break;
+  }
+  int mast = ret_mast(num);
+  switch(mast){
+    case 0: sprintf(str+1, "S"); break;
+    case 1: sprintf(str+1, "H"); break;
+    case 2: sprintf(str+1, "C"); break;
+    case 3: sprintf(str+1, "D"); break;
+    default: sprintf(str+1, "1"); break;
+  }
+  //return str;
 }
 
 int count_comb(struct card arr[], int n){
 
-	int ot = 0;
-	ot = is_RoyalFlush(arr, n);
-	//printf("FLASH_ROYAL %d\n", ot);
-	if(ot != -1){
-		return COMB_FLASH_ROYAL;
-	}
-	ot = is_StraightFlush(arr, n);
-	//printf("STRET_FLASH %d\n", ot);
-	if(ot != -1){
-		return COMB_STRET_FLASH + ot;
-	}
-	ot = is_Quads(arr, n);
-	//printf("CARE %d\n", ot);
-	if(ot != -1){
-		return COMB_CARE + ot;
-	}
-	ot = is_FullHouse(arr, n);
-	//printf("FULL_HOUSE %d\n", ot);
-	if(ot != -1){
-		return COMB_FULL_HOUSE + ot;
-	}
-	ot = is_Flush(arr, n);
-	//printf("FLASH %d\n", ot);
-	if(ot != -1){
-		return COMB_FLASH + ot;
-	}
-	ot = is_Straight(arr, n);
-	//printf("STRET %d\n", ot);
-	if(ot != -1){
-		return COMB_STRET + ot;
-	}
-	ot = is_Set(arr, n);
-	//printf("SET %d\n", ot);
-	if(ot != -1){
-		return COMB_SET + ot;
-	}
-	ot = is_TwoPairs(arr, n);
-	//printf("TWO_PAIRS %d\n", ot);
-	if(ot != -1){
-		return COMB_TWO_PAIRS + ot;
-	}
-	ot = is_OnePair(arr, n);
-	//printf("PAIRS %d\n", ot);
-	if(ot != -1){
-		return COMB_PAIRS + ot;
-	}
-	return is_Kicker(arr);
+  int ot = 0;
+  ot = is_RoyalFlush(arr, n);
+  if(ot != -1){
+    return COMB_FLASH_ROYAL;
+  }
+  ot = is_StraightFlush(arr, n);
+  if(ot != -1){
+    return COMB_STRET_FLASH + ot;
+  }
+  ot = is_Quads(arr, n);
+  if(ot != -1){
+    return COMB_CARE + ot;
+  }
+  ot = is_FullHouse(arr, n);
+  if(ot != -1){
+    return COMB_FULL_HOUSE + ot;
+  }
+  ot = is_Flush(arr, n);
+  if(ot != -1){
+    return COMB_FLASH + ot;
+  }
+  ot = is_Straight(arr, n);
+  if(ot != -1){
+    return COMB_STRET + ot;
+  }
+  ot = is_Set(arr, n);
+  if(ot != -1){
+    return COMB_SET + ot;
+  }
+  ot = is_TwoPairs(arr, n);
+  if(ot != -1){
+    return COMB_TWO_PAIRS + ot;
+  }
+  ot = is_OnePair(arr, n);
+  if(ot != -1){
+    return COMB_PAIRS + ot;
+  }
+  return is_Kicker(arr);
 }
-/*
-int main(){
-	struct card a[7];
-	for(int i = 0; i < 7; i++){
-		scanf("%d",&a[i].num);	
-	}
-	for (int i = 0; i < 7; i++){
-		a[i].suit = ret_mast(a[i].num);
-		a[i].value = ret_hight(a[i].num); 
-	}
-	for(int i = 0; i < 7; i++){
-		printf("%d %d %d\n",a[i].value, a[i].suit, a[i].num);	
-	}
-	printf("sort\n");
-	sortcard(a);
-	for(int i = 0; i < 7; i++){
-		printf("%d %d %d\n",a[i].value, a[i].suit, a[i].num);	
-	}
-	printf("%d\n", count_comb(a));
-	return 0;
-}*/
-
-

@@ -197,6 +197,7 @@ void* client_get_info_from_server(void* arguments) {
         rec.code = MENU;
         *id = next_id(*id);
         rec.id = *id;
+        log(fd, "send rec code: %d", rec.code);
         send(sock, &rec, sizeof(rec), 0);
         break;
       default:
@@ -256,6 +257,7 @@ void* client_get_info_from_pokerroom(void* arguments) {
       rec.code = FROM_TO_TABLE;
       rec.id = *id;
       copy_sendinf(&(rec.inf), &(msg_recive.inf));
+      log(fd, "send rec code: %d", rec.code);
       send(sock, &rec, sizeof(rec), 0);
     } else if (msg_recive.comand == DISCONNECT_CLIENT) {
       log(fd, "close read thread for client %d\n", num);
@@ -374,6 +376,7 @@ void* client_get_info_from_client(void* arguments) {
       *id = next_id(*id);
       rec.id = *id;
       rec.code = MENU;
+      log(fd, "send rec code: %d", rec.code);
       send(sock, &rec, sizeof(rec), 0);
       if (cl != NULL) {
         end_poker_thread(&client_get_info_from_pokerroom_thread, fd);
@@ -383,6 +386,7 @@ void* client_get_info_from_client(void* arguments) {
       *id = next_id(*id);
       rec.id = *id;
       rec.code = HELP;
+      log(fd, "send rec code: %d", rec.code);
       send(sock, &rec, sizeof(rec), 0);
       if (cl != NULL) {
         end_poker_thread(&client_get_info_from_pokerroom_thread, fd);
@@ -400,6 +404,7 @@ void* client_get_info_from_client(void* arguments) {
         *id = next_id(*id);
         rec.id = *id;
         rec.code = GAME;
+        log(fd, "send rec code: %d", rec.code);
         send(sock, &rec, sizeof(rec), 0);
 
         for (int i = 0; i < 6; i++) {
@@ -430,6 +435,7 @@ void* client_get_info_from_client(void* arguments) {
         *id = next_id(*id);
         rec.id = *id;
         rec.code = GAME;
+        log(fd, "send rec code: %d", rec.code);
         send(sock, &rec, sizeof(rec), 0);
         start_poker_thread(sock, md, num, id, cl,
                            &client_get_info_from_pokerroom_thread, fd);
@@ -445,6 +451,7 @@ void* client_get_info_from_client(void* arguments) {
         *id = next_id(*id);
         rec.id = *id;
         rec.code = MENU;
+        log(fd, "send rec code: %d", rec.code);
         send(sock, &rec, sizeof(rec), 0);
       }
       pthread_mutex_unlock(&(tb->mut_read_client));
@@ -480,6 +487,7 @@ void* client_get_info_from_client(void* arguments) {
         *id = next_id(*id);
         rec.id = *id;
         rec.code = MENU;
+        log(fd, "send rec code: %d", rec.code);
         send(sock, &rec, sizeof(rec), 0);
       }
     } else if (!strncmp(rec_sock.buf, "call", 4) && rec_sock.id == *id) {
@@ -592,6 +600,7 @@ void* client(void* arguments) {
 
   rec.code = MENU;
   rec.id = *id;
+  log(fd, "send rec code: %d", rec.code);
   send(sock, &rec, sizeof(rec), 0);
 
   void* argv;

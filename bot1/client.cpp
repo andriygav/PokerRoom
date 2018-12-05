@@ -1,4 +1,5 @@
 #include <zconf.h>
+#include <math.h>
 #include "client.h"
 #include "client_help.h"
 #include "client_menu.h"

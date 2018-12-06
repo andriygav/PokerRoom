@@ -132,20 +132,24 @@ client::client(int status, int sock, bool* argument, int fildis) {
 }
 
 int client::change_status(struct recivesock* rec) {
-  this->status = rec->code;
   if (rec->code == EXIT) {
+    this->status = rec->code;
     return EXIT;
   }
   if (rec->code == FIRST_STATUS) {
+    this->status = rec->code;
     return FIRST_STATUS;
   }
   if (rec->code == MENU) {
+    this->status = rec->code;
     return MENU;
   }
   if (rec->code == HELP) {
+    this->status = rec->code;
     return HELP;
   }
   if (rec->code == GAME) {
+    this->status = rec->code;
     return GAME;
   }
   return 0;

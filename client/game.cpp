@@ -403,63 +403,74 @@ void* game_get_info_from_server(void* arguments){
 		rbuf.buf[i] = 0;
 	}
 
+	int bytes_read;
+
 	struct recivesock rec;
 	while(1){
-		if(recv(my->sock, &rec, sizeof(rec), 0) == 0){
+		bytes_read = recv(my->sock, &rec, sizeof(rec), 0);
+		if(bytes_read == 0){
 			log(my->fd, "Lost conection whith server\n");
 			my->status = EXIT;
 			pthread_mutex_unlock(mut_exit);
 			return NULL;
 		}
 
-		my->id = rec.id;
-		if(rec.code < 1024){
-			my->change_status(&rec);
-			pthread_mutex_unlock(mut_exit);
-			return NULL;
-		}else if(rec.code == FROM_TO_TABLE){
-			my->rewrite(&(rec.inf));
-			my->show_all_inf();
+		
 
-			if(my->argument['t']){
-				my->show_all_inf_to_console();
+		if (bytes_read != -1){
+			log(my->fd, "recive rec_code: %d\n", rec.code);
+			if(rec.id != 0){
+				my->id = rec.id;
 			}
+			if(rec.code < 1024){
+				if (my->change_status(&rec) != 0){
+					pthread_mutex_unlock(mut_exit);
+					return NULL;
+				}
+			}else if(rec.code == FROM_TO_TABLE){
+				my->rewrite(&(rec.inf));
+				my->show_all_inf();
 
-			if(!my->argument['T']){
-				if(!my->cheak_pok_status(STATUS_ACTIVE)){
-					scene->but[5]->status = false;
-					scene->but[6]->status = false;
-					scene->but[7]->status = false;
-					scene->slide_raise->status = false;
-				}else{
-					scene->but[5]->status = true;
-					scene->but[6]->status = true;
-					scene->but[7]->status = true;
-					scene->slide_raise->status = true;	
+				if(my->argument['t']){
+					my->show_all_inf_to_console();
 				}
 
-				if(my->cheak_pok_status(STATUS_AFTER_GAME) || my->cheak_pok_status(STATUS_WINER)){
-					scene->but[4]->status = true;
-					scene->but[8]->status = true;
-					scene->but[9]->status = true;
-					scene->slide_getmoney->status = true;
-					scene->slide_putmoney->status = true;
-				}else{
-					scene->but[4]->status = false;
-					scene->but[8]->status = false;
-					scene->but[9]->status = false;
-					scene->slide_getmoney->status = false;
-					scene->slide_putmoney->status = false;
-				}
-				pthread_mutex_lock(mut_sdl);
-				scene->show();
-				pthread_mutex_unlock(mut_sdl);
-			}
+				if(!my->argument['T']){
+					if(!my->cheak_pok_status(STATUS_ACTIVE)){
+						scene->but[5]->status = false;
+						scene->but[6]->status = false;
+						scene->but[7]->status = false;
+						scene->slide_raise->status = false;
+					}else{
+						scene->but[5]->status = true;
+						scene->but[6]->status = true;
+						scene->but[7]->status = true;
+						scene->slide_raise->status = true;	
+					}
 
-		}else if(rec.code == SERVER_DISCONNECT_YOU){
-			sprintf(rbuf.buf, "disconnect");
-			rbuf.id = my->id;
-			send(my->sock, &rbuf, sizeof(rbuf), 0);
+					if(my->cheak_pok_status(STATUS_AFTER_GAME) || my->cheak_pok_status(STATUS_WINER)){
+						scene->but[4]->status = true;
+						scene->but[8]->status = true;
+						scene->but[9]->status = true;
+						scene->slide_getmoney->status = true;
+						scene->slide_putmoney->status = true;
+					}else{
+						scene->but[4]->status = false;
+						scene->but[8]->status = false;
+						scene->but[9]->status = false;
+						scene->slide_getmoney->status = false;
+						scene->slide_putmoney->status = false;
+					}
+					pthread_mutex_lock(mut_sdl);
+					scene->show();
+					pthread_mutex_unlock(mut_sdl);
+				}
+
+			}else if(rec.code == SERVER_DISCONNECT_YOU){
+				sprintf(rbuf.buf, "disconnect");
+				rbuf.id = my->id;
+				send(my->sock, &rbuf, sizeof(rbuf), 0);
+			}
 		}
 
 

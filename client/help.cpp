@@ -340,18 +340,26 @@ void* help_get_info_from_server(void* arguments){
 	free((struct help_get_info_from_server_argument_t*)arguments);
 
 	struct recivesock rec;
+	int bytes_read = 0;
 	while(1){
-		if(recv(my->sock, &rec, sizeof(rec), 0) == 0){
+		bytes_read = recv(my->sock, &rec, sizeof(rec), 0);
+		if(bytes_read == 0){
 			log(my->fd, "Lost conection whith server\n");
 			my->status = EXIT;
 			pthread_mutex_unlock(mut_exit);
 			return NULL;
 		}
-		my->id = rec.id;
-		if(rec.code < 1024){
-			my->change_status(&rec);
-			pthread_mutex_unlock(mut_exit);
-			return NULL;
+		if (bytes_read != -1){
+			log(my->fd, "recive rec_code: %d %zu\n", rec.code, rec.id);
+			if(rec.id != 0){
+				my->id = rec.id;
+			}
+			if(rec.code < 1024){
+				if (my->change_status(&rec) != 0){
+					pthread_mutex_unlock(mut_exit);
+					return NULL;
+				}
+			}
 		}
 	}
 	pthread_mutex_unlock(mut_exit);

@@ -10,7 +10,7 @@
 #include "play_info.h"
 
 #define EXIT -1
-#define FIRST_STATUS 0
+#define FIRST_STATUS 100
 #define MENU 1
 #define HELP 2
 #define GAME 3

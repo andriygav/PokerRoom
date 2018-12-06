@@ -98,7 +98,7 @@ int main(int argc, char **argv){
     	return 1;
     }
 //Conect(end)
-	client obj(0, sock, argument, fd);
+	client obj(FIRST_STATUS, sock, argument, fd);
 	while(1){
 		switch(obj.status){
 			case FIRST_STATUS:

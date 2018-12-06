@@ -82,11 +82,11 @@ out_get_argv:
 size_t next_id(size_t id) {
   size_t ret = id;
   size_t old_id = id;
-  id += rand();
-  if (id < 1000) id *= 1000;
+  id += (size_t)rand();
+  if (id < (size_t)1000) id *= (size_t)1000;
   srand(id);
-  while (ret == old_id || ret == 0) {
-    ret = rand();
+  while (ret == old_id || ret == (size_t)0) {
+    ret = ((size_t)rand())% 1000000;
   }
   return ret;
 }
@@ -145,8 +145,7 @@ void* client_get_info_from_server(void* arguments) {
   int num = ((struct client_get_info_from_server_argumets_t*)arguments)->num;
   size_t* id = ((struct client_get_info_from_server_argumets_t*)arguments)->id;
   int fd = ((struct client_get_info_from_server_argumets_t*)arguments)->fd;
-  struct table_t* tb =
-      ((struct client_get_info_from_server_argumets_t*)arguments)->tb;
+  struct table_t* tb = ((struct client_get_info_from_server_argumets_t*)arguments)->tb;
   free((struct client_get_info_from_server_argumets_t*)arguments);
 
   struct msg_from_server_t msg_from_serv;
@@ -198,7 +197,7 @@ void* client_get_info_from_server(void* arguments) {
         *id = next_id(*id);
         rec.id = *id;
         log(fd, "send rec code: %d\n", rec.code);
-        send(sock, &rec, sizeof(rec), 0);
+        log(fd, "is send: %d\n", send(sock, &rec, sizeof(rec), 0));
         break;
       default:
         break;
@@ -255,10 +254,11 @@ void* client_get_info_from_pokerroom(void* arguments) {
     if (msg_recive.comand == SEND_INFO_TO_CLIENT) {
       log(fd, "send info from poker room to %d\n", num);
       rec.code = FROM_TO_TABLE;
-      rec.id = *id;
+      *id = next_id(*id);
       copy_sendinf(&(rec.inf), &(msg_recive.inf));
-      log(fd, "send rec code: %d\n", rec.code);
-      send(sock, &rec, sizeof(rec), 0);
+      rec.id = *id;
+      log(fd, "send rec code: %d %zu\n", rec.code, rec.id);
+      log(fd, "is send: %d\n", send(sock, &rec, sizeof(rec), 0));
     } else if (msg_recive.comand == DISCONNECT_CLIENT) {
       log(fd, "close read thread for client %d\n", num);
       return nullptr;
@@ -326,8 +326,7 @@ void* client_get_info_from_client(void* arguments) {
   int num = ((struct client_get_info_from_client_argumets_t*)arguments)->num;
   size_t* id = ((struct client_get_info_from_client_argumets_t*)arguments)->id;
   int fd = ((struct client_get_info_from_client_argumets_t*)arguments)->fd;
-  struct table_t* tb =
-      ((struct client_get_info_from_client_argumets_t*)arguments)->tb;
+  struct table_t* tb = ((struct client_get_info_from_client_argumets_t*)arguments)->tb;
   struct client* cl = NULL;
 
   free((struct client_get_info_from_client_argumets_t*)arguments);
@@ -355,7 +354,7 @@ void* client_get_info_from_client(void* arguments) {
 
   while (1) {
   whil:
-    bytes_read = recv(sock, &rec_sock, sizeof(rec_sock), 0);
+    bytes_read = recv(sock, &rec_sock, sizeof(rec_sock), MSG_WAITALL);
     if (bytes_read == 0) {
       log(fd, "Lost conection with %d\n", num);
       msg_from_serv.comand = SERVER_COMAND_EXIT;
@@ -374,20 +373,20 @@ void* client_get_info_from_client(void* arguments) {
       return nullptr;
     } else if (!strncmp(rec_sock.buf, "menu", 4) && rec_sock.id == *id) {
       *id = next_id(*id);
-      rec.id = *id;
       rec.code = MENU;
+      rec.id = *id;
       log(fd, "send rec code: %d\n", rec.code);
-      send(sock, &rec, sizeof(rec), 0);
+      log(fd, "is send: %d\n", send(sock, &rec, sizeof(rec), 0));
       if (cl != NULL) {
         end_poker_thread(&client_get_info_from_pokerroom_thread, fd);
         cl = NULL;
       }
     } else if (!strncmp(rec_sock.buf, "help", 4) && rec_sock.id == *id) {
       *id = next_id(*id);
-      rec.id = *id;
       rec.code = HELP;
+      rec.id = *id;
       log(fd, "send rec code: %d\n", rec.code);
-      send(sock, &rec, sizeof(rec), 0);
+      log(fd, "is send: %d\n", send(sock, &rec, sizeof(rec), 0));
       if (cl != NULL) {
         end_poker_thread(&client_get_info_from_pokerroom_thread, fd);
         cl = NULL;
@@ -402,10 +401,10 @@ void* client_get_info_from_client(void* arguments) {
           goto whil;
         }
         *id = next_id(*id);
-        rec.id = *id;
         rec.code = GAME;
+        rec.id = *id;
         log(fd, "send rec code: %d\n", rec.code);
-        send(sock, &rec, sizeof(rec), 0);
+        log(fd, "is send: %d\n", send(sock, &rec, sizeof(rec), 0));
 
         for (int i = 0; i < 6; i++) {
           if (cl->num[i] == num) {
@@ -433,10 +432,10 @@ void* client_get_info_from_client(void* arguments) {
           }
         }
         *id = next_id(*id);
-        rec.id = *id;
         rec.code = GAME;
+        rec.id = *id;
         log(fd, "send rec code: %d\n", rec.code);
-        send(sock, &rec, sizeof(rec), 0);
+        log(fd, "is send: %d\n", send(sock, &rec, sizeof(rec), 0));
         start_poker_thread(sock, md, num, id, cl,
                            &client_get_info_from_pokerroom_thread, fd);
 
@@ -449,10 +448,10 @@ void* client_get_info_from_client(void* arguments) {
                0);
       } else {
         *id = next_id(*id);
-        rec.id = *id;
         rec.code = MENU;
+        rec.id = *id;
         log(fd, "send rec code: %d\n", rec.code);
-        send(sock, &rec, sizeof(rec), 0);
+        log(fd, "is send: %d\n", send(sock, &rec, sizeof(rec), 0));
       }
       pthread_mutex_unlock(&(tb->mut_read_client));
     } else if (!strncmp(rec_sock.buf, "new", 3) && rec_sock.id == *id) {
@@ -471,6 +470,7 @@ void* client_get_info_from_client(void* arguments) {
         msg_to_room.num = poknum + MAX_CLIENT_NUM;
         msg_to_room.buf.comand = REFRESH;
         msg_to_room.buf.rs = 0;
+        *id = next_id(*id);
         msgsnd(cl->PokMesDis, (void*)(&msg_to_room), sizeof(msg_to_room.buf),
                0);
       }
@@ -485,10 +485,10 @@ void* client_get_info_from_client(void* arguments) {
                0);
         cl = NULL;
         *id = next_id(*id);
-        rec.id = *id;
         rec.code = MENU;
+        rec.id = *id;
         log(fd, "send rec code: %d\n", rec.code);
-        send(sock, &rec, sizeof(rec), 0);
+        log(fd, "is send: %d\n", send(sock, &rec, sizeof(rec), 0));
       }
     } else if (!strncmp(rec_sock.buf, "call", 4) && rec_sock.id == *id) {
       if (cl != NULL) {
@@ -601,33 +601,29 @@ void* client(void* arguments) {
   rec.code = MENU;
   rec.id = *id;
   log(fd, "send rec code: %d %zu\n", rec.code, rec.id);
-  send(sock, &rec, sizeof(rec), 0);
+  log(fd, "is send: %d\n", send(sock, &rec, sizeof(rec), 0));
 
   void* argv;
 
   pthread_t client_get_info_from_client_thread = 0;
-  argv = (struct client_get_info_from_client_argumets_t*)malloc(
-      sizeof(struct client_get_info_from_client_argumets_t));
+  argv = (struct client_get_info_from_client_argumets_t*)malloc(sizeof(struct client_get_info_from_client_argumets_t));
   ((struct client_get_info_from_client_argumets_t*)argv)->sock = sock;
   ((struct client_get_info_from_client_argumets_t*)argv)->md = md;
   ((struct client_get_info_from_client_argumets_t*)argv)->num = num;
   ((struct client_get_info_from_client_argumets_t*)argv)->id = id;
   ((struct client_get_info_from_client_argumets_t*)argv)->tb = tb;
   ((struct client_get_info_from_client_argumets_t*)argv)->fd = fd;
-  pthread_create(&(client_get_info_from_client_thread), NULL,
-                 client_get_info_from_client, argv);
+  pthread_create(&(client_get_info_from_client_thread), NULL, client_get_info_from_client, argv);
 
   pthread_t client_get_info_from_server_thread = 0;
-  argv = (struct client_get_info_from_server_argumets_t*)malloc(
-      sizeof(struct client_get_info_from_server_argumets_t));
+  argv = (struct client_get_info_from_server_argumets_t*)malloc(sizeof(struct client_get_info_from_server_argumets_t));
   ((struct client_get_info_from_server_argumets_t*)argv)->sock = sock;
   ((struct client_get_info_from_server_argumets_t*)argv)->md = md;
   ((struct client_get_info_from_server_argumets_t*)argv)->num = num;
   ((struct client_get_info_from_server_argumets_t*)argv)->tb = tb;
   ((struct client_get_info_from_server_argumets_t*)argv)->id = id;
   ((struct client_get_info_from_server_argumets_t*)argv)->fd = fd;
-  pthread_create(&(client_get_info_from_server_thread), NULL,
-                 client_get_info_from_server, argv);
+  pthread_create(&(client_get_info_from_server_thread), NULL, client_get_info_from_server, argv);
 
   pthread_join(client_get_info_from_server_thread, NULL);
   pthread_cancel(client_get_info_from_client_thread);
@@ -708,13 +704,13 @@ whil:
 			argc = 0;
 		}
 
-	    bytes_read = recv(sock, &buf, sizeof(buf), 0);
+	    bytes_read = recv(sock, &buf, sizeof(buf), MSG_WAITALL);
 	    if (bytes_read == 0) {
-			close(sock);
-			pthread_mutex_lock(&(tb->mut_read_client));
-			tb->admin = 0;
-			pthread_mutex_unlock(&(tb->mut_read_client));
-			return nullptr;
+  			close(sock);
+  			pthread_mutex_lock(&(tb->mut_read_client));
+  			tb->admin = 0;
+  			pthread_mutex_unlock(&(tb->mut_read_client));
+  			return nullptr;
 	    }
 
 	    argc = 0;
@@ -766,7 +762,7 @@ int start_server(int port, const char* adr, int md, struct table_t* tb) {
     return 1;
   }
 
-  listen(listener, 1);
+  listen(listener, 128);
   int pid = 0;
   int status = 0;
 
@@ -782,7 +778,7 @@ int start_server(int port, const char* adr, int md, struct table_t* tb) {
       return 1;
     }
 
-    bytes_read = recv(sock, &authent_rec, sizeof(authent_rec), 0);
+    bytes_read = recv(sock, &authent_rec, sizeof(authent_rec), MSG_WAITALL);
 
     if (bytes_read == 0) {
       goto whil;

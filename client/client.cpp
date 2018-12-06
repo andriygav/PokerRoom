@@ -262,13 +262,12 @@ int client_t::first_state(){
 	}
 	struct recivesock rec;
 	while(1){
-		bytes_read = recv(sock, &rec, sizeof(rec), MSG_DONTWAIT);
+		bytes_read = recv(sock, &rec, sizeof(rec), MSG_WAITALL);
 		if(bytes_read == 0){
 			log(this->fd, "Lost conection with server\n");
 			this->status = EXIT;
 			return EXIT;
 		}
-		printf("%zu\n", rec.id);
 		if (bytes_read != -1){
 			if(rec.id != 0){
 				this->id = rec.id;

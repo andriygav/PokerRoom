@@ -131,6 +131,7 @@ struct recivesock {
   struct sendinf inf;
 };
 #pragma pack(pop)
+
 #pragma pack(push, 1)
 struct recive_t {
   char buf[256];

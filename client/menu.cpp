@@ -148,7 +148,8 @@ void* menu_get_info_from_server(void* arguments){
 	int bytes_read = 0;
 
 	while(1){
-		bytes_read = recv(my->sock, &rec, sizeof(rec), 0);
+whil:
+		bytes_read = recv(my->sock, &rec, sizeof(rec), MSG_WAITALL);
 		log(my->fd, "bytes_read: %d\n", bytes_read);
 		if(bytes_read == 0){
 			log(my->fd, "Lost conection with server\n");
@@ -160,6 +161,8 @@ void* menu_get_info_from_server(void* arguments){
 			log(my->fd, "recive rec_code: %d %zu %d\n", rec.code, rec.id, bytes_read);
 			if(rec.id != 0){
 				my->id = rec.id;
+			}else{
+				goto whil;
 			}
 			if(rec.code < 1024){
 				if (my->change_status(&rec) != 0){

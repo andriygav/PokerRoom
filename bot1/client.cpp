@@ -166,7 +166,7 @@ int client::first_state() {
   }
   struct recivesock rec;
   while (1) {
-    bytes_read = recv(sock, &rec, sizeof(rec), MSG_DONTWAIT);
+    bytes_read = recv(sock, &rec, sizeof(rec), MSG_WAITALL);
     if (bytes_read == 0) {
       log(this->fd, "Lost conection whith server\n");
       this->status = EXIT;

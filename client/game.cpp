@@ -407,7 +407,10 @@ void* game_get_info_from_server(void* arguments){
 
 	struct recivesock rec;
 	while(1){
-		bytes_read = recv(my->sock, &rec, sizeof(rec), 0);
+whil:
+
+		bytes_read = recv(my->sock, &rec, sizeof(rec), MSG_WAITALL);
+		log(my->fd, "bytes_read: %d\n", bytes_read);
 		if(bytes_read == 0){
 			log(my->fd, "Lost conection whith server\n");
 			my->status = EXIT;
@@ -415,10 +418,8 @@ void* game_get_info_from_server(void* arguments){
 			return NULL;
 		}
 
-		
-
 		if (bytes_read != -1){
-			log(my->fd, "recive rec_code: %d\n", rec.code);
+			log(my->fd, "recive rec_code: %d %zu\n", rec.code, rec.id);
 			if(rec.id != 0){
 				my->id = rec.id;
 			}
@@ -490,6 +491,7 @@ static const char *newEnv[] = {
 	"raise",
 	"getmoney",
 	"putmoney",
+	"fold",
 	NULL
 };
 
@@ -540,7 +542,7 @@ void* game_scanf(void* arguments){
 		optind = 1;
 
 		snprintf(rbuf.buf, 256, "%s", buf);
-
+		log(my->fd, "send id: %zu\n", my->id);
 		if(!strncmp(rbuf.buf, "exit", 4)){
 			my->status = EXIT;
 			rbuf.id = my->id;

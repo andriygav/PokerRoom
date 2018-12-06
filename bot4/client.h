@@ -270,6 +270,7 @@ void* menu_get_info_from_server(void* arguments){
   int bytes_read = 0;
 
   while(1){
+ whil:
     bytes_read = recv(my->sock, &rec, sizeof(rec), 0);
     log(my->fd, "bytes_read: %d\n", bytes_read);
     if(bytes_read == 0){
@@ -282,6 +283,8 @@ void* menu_get_info_from_server(void* arguments){
       log(my->fd, "recive rec_code: %d %zu %d\n", rec.code, rec.id, bytes_read);
       if(rec.id != 0){
         my->id = rec.id;
+      }else{
+      	goto whil;
       }
       if(rec.code < 1024){
         if (my->change_status(&rec) != 0){
@@ -430,28 +433,40 @@ struct help_scanf_argument_t{
 	client* my;
 	pthread_mutex_t* mut_exit;
 };
-void* help_get_info_from_server(void* arguments){
-	client* my = ((struct help_get_info_from_server_argument_t*)arguments)->my;
-	pthread_mutex_t* mut_exit = ((struct help_get_info_from_server_argument_t*)arguments)->mut_exit;
-	free((struct help_get_info_from_server_argument_t*)arguments);
 
-	struct recivesock rec;
-	while(1){
-		if(recv(my->sock, &rec, sizeof(rec), 0) == 0){
-			log(my->fd, "Lost conection whith server\n");
-			my->status = EXIT;
-			pthread_mutex_unlock(mut_exit);
-			return NULL;
-		}
-		my->id = rec.id;
-		if(rec.code < 1024){
-			my->change_status(&rec);
-			pthread_mutex_unlock(mut_exit);
-			return NULL;
-		}
-	}
-	pthread_mutex_unlock(mut_exit);
-	return NULL;
+void* help_get_info_from_server(void* arguments){
+  client* my = ((struct help_get_info_from_server_argument_t*)arguments)->my;
+  pthread_mutex_t* mut_exit = ((struct help_get_info_from_server_argument_t*)arguments)->mut_exit;
+  free((struct help_get_info_from_server_argument_t*)arguments);
+
+  struct recivesock rec;
+  int bytes_read = 0;
+  while(1){
+whil:
+    bytes_read = recv(my->sock, &rec, sizeof(rec), 0);
+    if(bytes_read == 0){
+      log(my->fd, "Lost conection whith server\n");
+      my->status = EXIT;
+      pthread_mutex_unlock(mut_exit);
+      return NULL;
+    }
+    if (bytes_read != -1){
+      log(my->fd, "recive rec_code: %d %zu\n", rec.code, rec.id);
+      if(rec.id != 0){
+        my->id = rec.id;
+      }else{
+      	goto whil;
+      }
+      if(rec.code < 1024){
+        if (my->change_status(&rec) != 0){
+          pthread_mutex_unlock(mut_exit);
+          return NULL;
+        }
+      }
+    }
+  }
+  pthread_mutex_unlock(mut_exit);
+  return NULL;
 }
 
 
@@ -639,200 +654,207 @@ void* game_get_info_from_server(void* arguments){
 
 	double getMon = 0.0, takeMon = 0.0;
 	bool get_money = false, take_money = false;	
+	int bytes_read = 0;
 
 	while(1){
-		if(recv(my->sock, &rec, sizeof(rec), 0) == 0){
+whil:
+	    bytes_read = recv(my->sock, &rec, sizeof(rec), 0);
+	    if(bytes_read == 0){
 			log(my->fd, "Lost conection whith server\n");
 			my->status = EXIT;
 			pthread_mutex_unlock(mut_exit);
 			return NULL;
-		}
+	    }
 
-		my->id = rec.id;
-		if(rec.code < 1024){
-			my->change_status(&rec);
-			pthread_mutex_unlock(mut_exit);
-			return NULL;
-		}else if(rec.code == FROM_TO_TABLE){
-			my->rewrite(&(rec.inf));
-			if(my->table.card[0] < 0){
-				for(int i = 0; i < 6; i++)
-					my->init_cash[i] = (my->player[i].cash + my->player[i].bet > my->init_cash[i])?(my->player[i].cash + my->player[i].bet):my->init_cash[i];
-			}
-			my->show_all_inf();
-			if(my->cheak_pok_status(STATUS_ACTIVE) && flag != my->id){
-				int num_game = 1;
-				if(my->table.card[0] >= 0)
-					num_game = 2;
-				if(my->table.card[3] >= 0)
-					num_game = 3;
-				if(my->table.card[4] >= 0)
-					num_game = 4;
-
-				double arr[BOT_INPUT_NEYRON];
-				for (int i = 0; i < BOT_INPUT_NEYRON; i++)
-					arr[i] = 0.0;
-				set_arr(arr, my, num_game);
-				double res = my->boting->action(num_game, arr);
-				res = phi(res);
-				if(res > 1)
-					res = 1;
-				else if (res < 0)
-					res = 0;
-				
-				my->boting->log(arr, my->num, res, num_game);
-				log(my->fd, "#res = %lf\n", res);
-
-				if(my->table.bet > res * (my->player[my->num].cash) + my->player[my->num].bet){
-					sprintf(rbuf.buf, "fold");
-					card_1 = my->mycard[0];
-					card_2 = my->mycard[1];
-				}else if(res * (0.75)*my->player[my->num].cash < my->table.bet - my->player[my->num].bet || (my->player[my->num].cash < my->table.blind)){
-					sprintf(rbuf.buf, "call");
-				}else{
-					sprintf(rbuf.buf, "raise %lf", ((int)((res*(0.9)*(my->player[my->num].cash) - (my->table.bet - my->player[my->num].bet)) / my->table.blind + 1)) * my->table.blind);
+		if (bytes_read != -1){
+      		if(rec.id != 0){
+        		my->id = rec.id;
+      		}else{
+      			goto whil;
+      		}
+			if(rec.code < 1024){
+		        if(my->change_status(&rec) != 0){
+			        pthread_mutex_unlock(mut_exit);
+			        return NULL;
+		        }
+			}else if(rec.code == FROM_TO_TABLE){
+				my->rewrite(&(rec.inf));
+				if(my->table.card[0] < 0){
+					for(int i = 0; i < 6; i++)
+						my->init_cash[i] = (my->player[i].cash + my->player[i].bet > my->init_cash[i])?(my->player[i].cash + my->player[i].bet):my->init_cash[i];
 				}
+				my->show_all_inf();
+				if(my->cheak_pok_status(STATUS_ACTIVE) && flag != my->id){
+					int num_game = 1;
+					if(my->table.card[0] >= 0)
+						num_game = 2;
+					if(my->table.card[3] >= 0)
+						num_game = 3;
+					if(my->table.card[4] >= 0)
+						num_game = 4;
 
-				rbuf.id = my->id;
-				send(my->sock, &rbuf, sizeof(rbuf), 0);
-				flag = my->id;
-			}
+					double arr[BOT_INPUT_NEYRON];
+					for (int i = 0; i < BOT_INPUT_NEYRON; i++)
+						arr[i] = 0.0;
+					set_arr(arr, my, num_game);
+					double res = my->boting->action(num_game, arr);
+					res = phi(res);
+					if(res > 1)
+						res = 1;
+					else if (res < 0)
+						res = 0;
+					
+					my->boting->log(arr, my->num, res, num_game);
+					log(my->fd, "#res = %lf\n", res);
 
-			if ((my->cheak_pok_status(STATUS_WINER) || my->cheak_pok_status(STATUS_AFTER_GAME)) && get_money && !take_money){
-				if (getMon != 0 && abs(getMon - my->player[my->num].cash) > my->table.blind){
-					my->my_money += getMon - my->player[my->num].cash;
-					log(my->fd, "#MONEY %d -> %lf\n",my->num, my->my_money);
-					getMon = 0.0;
-					get_money = false;
-				}
-			}
-
-			if ((my->cheak_pok_status(STATUS_WINER) || my->cheak_pok_status(STATUS_AFTER_GAME)) && !get_money && !take_money){
-				//printf("%s %s\n", get_money? "get_true":"get_false",  take_money?"take_true":"take_false");
-				if (my->player[my->num].cash > 2*START_CASH){
-					getMon = my->player[my->num].cash;
-					sprintf(rbuf.buf, "getmoney %lf", my->player[my->num].cash - (START_CASH + 1));
-					rbuf.id = my->id;
-					send(my->sock, &rbuf, sizeof(rbuf), 0);
-					get_money = true;
-				}
-			}
-
-			if ((my->cheak_pok_status(STATUS_WINER) || my->cheak_pok_status(STATUS_AFTER_GAME)) && take_money && !get_money){
-				if (takeMon < 2*my->table.blind && abs(takeMon - my->player[my->num].cash) > my->table.blind){
-					my->my_money += takeMon - my->player[my->num].cash;
-					log(my->fd, "#MONEY %d -> %lf\n",my->num, my->my_money);
-					takeMon = 0.0;
-					take_money = false;
-				}
-			}
-
-			if ((my->cheak_pok_status(STATUS_WINER) || my->cheak_pok_status(STATUS_AFTER_GAME)) && !take_money && !get_money){
-				//printf("%s %s\n", get_money? "get_true":"get_false",  take_money?"take_true":"take_false");
-				if (my->player[my->num].cash < 2*my->table.blind){
-					takeMon = my->player[my->num].cash;
-					sprintf(rbuf.buf, "putmoney %lf", START_CASH);
-					rbuf.id = my->id;
-					send(my->sock, &rbuf, sizeof(rbuf), 0);
-					take_money = true;
-				}
-			}
-			if ((my->cheak_pok_status(STATUS_WINER) || my->cheak_pok_status(STATUS_AFTER_GAME)) && (ccount % 100 == 0)){
-				log(my->fd, "my_money %d -> %lf\n",my->num, my->player[my->num].cash + my->my_money - START_CASH);
-			}
-
-			if (((my->cheak_pok_status(STATUS_WINER) || my->cheak_pok_status(STATUS_AFTER_GAME)) && ccount < 1000) && flag1 != my->id && !get_money && !take_money){
-				ccount++;
-				
-				for(size_t i = 0; i < my->boting->count; i++){
-					if(my->final_table[my->num] == 1){
-						my->boting->ans[i] = pow(my->boting->ans[i], 9.0/10.0);
-					}else if(my->final_table[my->num] == 2){
-						my->boting->ans[i] = tah(my->boting->ans[i]);
-					}else if(my->final_table[my->num] == -1 && i == my->boting->count -1){	
-						my->boting->ans[i] = my->boting->ans[i]*(1.0 + tan((1.0/10.0)*(my->boting->arr[i][1] - 0.2)));
-											
+					if(my->table.bet > res * (my->player[my->num].cash) + my->player[my->num].bet){
+						sprintf(rbuf.buf, "fold");
+						card_1 = my->mycard[0];
+						card_2 = my->mycard[1];
+					}else if(res * (0.75)*my->player[my->num].cash < my->table.bet - my->player[my->num].bet || (my->player[my->num].cash < my->table.blind)){
+						sprintf(rbuf.buf, "call");
 					}else{
-						my->boting->ans[i] = log(1 + my->boting->ans[i]);
+						sprintf(rbuf.buf, "raise %lf", ((int)((res*(0.9)*(my->player[my->num].cash) - (my->table.bet - my->player[my->num].bet)) / my->table.blind + 1)) * my->table.blind);
 					}
-					my->boting->ans[i] = phi_in(my->boting->ans[i]);
-				}
-				int cou = 0;
-				for(int ti = 0; ti < 6; ti++){
-					if(my->final_table[ti] > 0)
-						cou++;
+
+					rbuf.id = my->id;
+					send(my->sock, &rbuf, sizeof(rbuf), 0);
+					flag = my->id;
 				}
 
-
-				int fd = open("Bot4/semFit", O_CREAT|O_EXCL, 0666);
-
-				if(fd >= 0){
-					close(fd);
+				if ((my->cheak_pok_status(STATUS_WINER) || my->cheak_pok_status(STATUS_AFTER_GAME)) && get_money && !take_money){
+					if (getMon != 0 && abs(getMon - my->player[my->num].cash) > my->table.blind){
+						my->my_money += getMon - my->player[my->num].cash;
+						log(my->fd, "#MONEY %d -> %lf\n",my->num, my->my_money);
+						getMon = 0.0;
+						get_money = false;
+					}
 				}
 
-				int sem = semget(ftok("Bot4/semFit", 0), 1, IPC_CREAT|IPC_EXCL|0666);
-
-				if(sem >= 0){
-					union semun arg;
-					arg.val = 1;
-					semctl(sem, 0, SETVAL, arg);
-				}else{
-					sem = semget(ftok("Bot4/semFit", 0), 1, 0);
+				if ((my->cheak_pok_status(STATUS_WINER) || my->cheak_pok_status(STATUS_AFTER_GAME)) && !get_money && !take_money){
+					//printf("%s %s\n", get_money? "get_true":"get_false",  take_money?"take_true":"take_false");
+					if (my->player[my->num].cash > 2*START_CASH){
+						getMon = my->player[my->num].cash;
+						sprintf(rbuf.buf, "getmoney %lf", my->player[my->num].cash - (START_CASH + 1));
+						rbuf.id = my->id;
+						send(my->sock, &rbuf, sizeof(rbuf), 0);
+						get_money = true;
+					}
 				}
 
-				if(sem < 0){
-					log(my->fd, "semaphore: %s\n", strerror(errno));
-				}else{
-					OP(sem, 0, -1);
+				if ((my->cheak_pok_status(STATUS_WINER) || my->cheak_pok_status(STATUS_AFTER_GAME)) && take_money && !get_money){
+					if (takeMon < 2*my->table.blind && abs(takeMon - my->player[my->num].cash) > my->table.blind){
+						my->my_money += takeMon - my->player[my->num].cash;
+						log(my->fd, "#MONEY %d -> %lf\n",my->num, my->my_money);
+						takeMon = 0.0;
+						take_money = false;
+					}
+				}
 
-					if(cou > 1 || my->final_table[my->num] == -1){
-						for (int i = 0; i < my->boting->count; i++){
-							fprintf(fres, "%zu ", my->boting->act[i]);
-							for (int j = 0; j < BOT_INPUT_NEYRON; j++){
-								fprintf(fres, "%lf ", my->boting->arr[i][j]);
-							}
-							fprintf(fres, "%lf %d %lf\n", my->boting->ans[i], my->final_table[my->num], phi_in(my->boting->myans[i]));
+				if ((my->cheak_pok_status(STATUS_WINER) || my->cheak_pok_status(STATUS_AFTER_GAME)) && !take_money && !get_money){
+					//printf("%s %s\n", get_money? "get_true":"get_false",  take_money?"take_true":"take_false");
+					if (my->player[my->num].cash < 2*my->table.blind){
+						takeMon = my->player[my->num].cash;
+						sprintf(rbuf.buf, "putmoney %lf", START_CASH);
+						rbuf.id = my->id;
+						send(my->sock, &rbuf, sizeof(rbuf), 0);
+						take_money = true;
+					}
+				}
+				if ((my->cheak_pok_status(STATUS_WINER) || my->cheak_pok_status(STATUS_AFTER_GAME)) && (ccount % 100 == 0)){
+					log(my->fd, "my_money %d -> %lf\n",my->num, my->player[my->num].cash + my->my_money - START_CASH);
+				}
+
+				if (((my->cheak_pok_status(STATUS_WINER) || my->cheak_pok_status(STATUS_AFTER_GAME)) && ccount < 1000) && flag1 != my->id && !get_money && !take_money){
+					ccount++;
+					
+					for(size_t i = 0; i < my->boting->count; i++){
+						if(my->final_table[my->num] == 1){
+							my->boting->ans[i] = pow(my->boting->ans[i], 9.0/10.0);
+						}else if(my->final_table[my->num] == 2){
+							my->boting->ans[i] = tah(my->boting->ans[i]);
+						}else if(my->final_table[my->num] == -1 && i == my->boting->count -1){	
+							my->boting->ans[i] = my->boting->ans[i]*(1.0 + tan((1.0/10.0)*(my->boting->arr[i][1] - 0.2)));
+												
+						}else{
+							my->boting->ans[i] = log(1 + my->boting->ans[i]);
 						}
+						my->boting->ans[i] = phi_in(my->boting->ans[i]);
 					}
-					fflush(fres);
-					if (my->argument['f']){
-						my->boting->load();
-						size_t t_num;
-						double t_arr[BOT_INPUT_NEYRON];
-						double t_ans;
-						double t_myans;
-						int t_res;
-						rewind(ffit);
-						while(fscanf(ffit, "%zu ", &t_num) != EOF){
-							for (int j = 0; j < BOT_INPUT_NEYRON; j++){
-								fscanf(ffit, "%lf ", &t_arr[j]);
+					int cou = 0;
+					for(int ti = 0; ti < 6; ti++){
+						if(my->final_table[ti] > 0)
+							cou++;
+					}
+
+
+					/*int fd = open("Bot4/semFit", O_CREAT|O_EXCL, 0666);
+
+					if(fd >= 0){
+						close(fd);
+					}
+
+					int sem = semget(ftok("Bot4/semFit", 0), 1, IPC_CREAT|IPC_EXCL|0666);
+
+					if(sem >= 0){
+						union semun arg;
+						arg.val = 1;
+						semctl(sem, 0, SETVAL, arg);
+					}else{
+						sem = semget(ftok("Bot4/semFit", 0), 1, 0);
+					}
+
+					if(sem < 0){
+						log(my->fd, "semaphore: %s\n", strerror(errno));
+					}else{
+						OP(sem, 0, -1);
+
+						if(cou > 1 || my->final_table[my->num] == -1){
+							for (int i = 0; i < my->boting->count; i++){
+								fprintf(fres, "%zu ", my->boting->act[i]);
+								for (int j = 0; j < BOT_INPUT_NEYRON; j++){
+									fprintf(fres, "%lf ", my->boting->arr[i][j]);
+								}
+								fprintf(fres, "%lf %d %lf\n", my->boting->ans[i], my->final_table[my->num], phi_in(my->boting->myans[i]));
 							}
-							fscanf(ffit, "%lf %d %lf\n", &t_ans, &t_res, &t_myans);
-							if (!(t_res == 1 && phi(my->boting->result(t_num, t_arr)) > phi(t_ans)) && !(t_res != 1 && phi(my->boting->result(t_num, t_arr)) < phi(t_ans)))
-								my->boting->learn(t_num, t_arr, t_ans);
 						}
-					}
+						fflush(fres);
+						if (my->argument['f']){
+							my->boting->load();
+							size_t t_num;
+							double t_arr[BOT_INPUT_NEYRON];
+							double t_ans;
+							double t_myans;
+							int t_res;
+							rewind(ffit);
+							while(fscanf(ffit, "%zu ", &t_num) != EOF){
+								for (int j = 0; j < BOT_INPUT_NEYRON; j++){
+									fscanf(ffit, "%lf ", &t_arr[j]);
+								}
+								fscanf(ffit, "%lf %d %lf\n", &t_ans, &t_res, &t_myans);
+								if (!(t_res == 1 && phi(my->boting->result(t_num, t_arr)) > phi(t_ans)) && !(t_res != 1 && phi(my->boting->result(t_num, t_arr)) < phi(t_ans)))
+									my->boting->learn(t_num, t_arr, t_ans);
+							}
+						}
 
-					my->boting->save();
-					OP(sem, 0, 1);
+						my->boting->save();
+						OP(sem, 0, 1);
+					}*/
+
+
+					my->boting->reset_log();
+					my->boting->LastAns = 0;
+
+					card_1 = -1;
+					card_2 = -1;				
+
+					sprintf(rbuf.buf, "new");
+					rbuf.id = my->id;
+					send(my->sock, &rbuf, sizeof(rbuf), 0);
+					flag1 = my->id;
 				}
-
-
-				my->boting->reset_log();
-				my->boting->LastAns = 0;
-
-				card_1 = -1;
-				card_2 = -1;				
-
-				sprintf(rbuf.buf, "new");
-				rbuf.id = my->id;
-				send(my->sock, &rbuf, sizeof(rbuf), 0);
-				flag1 = my->id;
 			}
-
 		}
-
-
 	}
 	pthread_mutex_unlock(mut_exit);
 	return NULL;

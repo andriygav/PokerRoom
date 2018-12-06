@@ -91,7 +91,7 @@ int main(int argc, char **argv){
 
    	send(sock, &authent_rec, sizeof(authent_rec), 0);
    	int bytes_read = 0;
-   	bytes_read = recv(sock, &authent_rec, sizeof(authent_rec), 0);
+   	bytes_read = recv(sock, &authent_rec, sizeof(authent_rec), MSG_WAITALL);
     if (bytes_read == 0) {
     	log(fd, "Connect: %s", strerror(errno));
     	return 1;

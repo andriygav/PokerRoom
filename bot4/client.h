@@ -176,24 +176,28 @@ client::client(int status, int sock, bool* argument, int fildis){
 	}
 }
 
-int client::change_status(struct recivesock* rec){
-	this->status = rec->code;
-	if(rec->code == EXIT){
-		return EXIT;
-	}
-	if(rec->code == FIRST_STATUS){
-		return FIRST_STATUS;
-	}
-	if(rec->code == MENU){
-		return MENU;
-	}
-	if(rec->code == HELP){
-		return HELP;
-	}
-	if(rec->code == GAME){
-		return GAME;
-	}
-	return 0;
+int client::change_status(struct recivesock* rec) {
+  if (rec->code == EXIT) {
+    this->status = rec->code;
+    return EXIT;
+  }
+  if (rec->code == FIRST_STATUS) {
+    this->status = rec->code;
+    return FIRST_STATUS;
+  }
+  if (rec->code == MENU) {
+    this->status = rec->code;
+    return MENU;
+  }
+  if (rec->code == HELP) {
+    this->status = rec->code;
+    return HELP;
+  }
+  if (rec->code == GAME) {
+    this->status = rec->code;
+    return GAME;
+  }
+  return 0;
 }
 
 static size_t myscanf(char* dest){
@@ -208,39 +212,41 @@ static size_t myscanf(char* dest){
 }
 
 
-int client::first_state(){
-	log(this->fd, "first status\n");
-	if(this->argument['t'])
-		printf("first status\n");
+int client::first_state() {
+  log(this->fd, "first status\n");
+  if (this->argument['t']) printf("first status\n");
 
-	int bytes_read = 0;
-	char rbuf[256];
-	for(size_t i = 0; i < sizeof(rbuf); i++){
-		rbuf[i] = 0;	
-	}
-	struct recivesock rec;
-	while(1){
-		bytes_read = recv(sock, &rec, sizeof(rec), MSG_DONTWAIT);
-		if(bytes_read == 0){
-			log(this->fd, "Lost conection whith server\n");
-			this->status = EXIT;
-			return EXIT;
-		}
-		if (bytes_read != -1){
-			this->id = rec.id;
-			if(rec.code < 1024){
-				return this->change_status(&rec);
-			}
-		}
-		if(myscanf(rbuf)){
-			if(!strncmp(rbuf, "exit", 4)){
-				this->status = EXIT;
-				return EXIT;
-			}
-		}
-	}
-
-	return 0;
+  int bytes_read = 0;
+  char rbuf[256];
+  for (size_t i = 0; i < sizeof(rbuf); i++) {
+    rbuf[i] = 0;
+  }
+  struct recivesock rec;
+  while (1) {
+    bytes_read = recv(sock, &rec, sizeof(rec), MSG_DONTWAIT);
+    if (bytes_read == 0) {
+      log(this->fd, "Lost conection whith server\n");
+      this->status = EXIT;
+      return EXIT;
+    }
+    if (bytes_read != -1) {
+    	if(rec.id != 0){
+    		this->id = rec.id;
+    		if (rec.code < 1024) {
+	      	int ret = this->change_status(&rec);
+	      	if(ret != 0){
+	      		return ret;
+	      	}
+	      }
+    	}
+    }
+    if (myscanf(rbuf)) {
+      if (!strncmp(rbuf, "exit", 4)) {
+        this->status = EXIT;
+        return EXIT;
+      }
+    }
+  }
 }
 
 
@@ -256,27 +262,37 @@ struct menu_get_info_from_server_argument_t{
 };
 
 void* menu_get_info_from_server(void* arguments){
-	client* my = ((struct menu_get_info_from_server_argument_t*)arguments)->my;
-	pthread_mutex_t* mut_exit = ((struct menu_get_info_from_server_argument_t*)arguments)->mut_exit;
-	free((struct menu_get_info_from_server_argument_t*)arguments);
+  client* my = ((struct menu_get_info_from_server_argument_t*)arguments)->my;
+  pthread_mutex_t* mut_exit = ((struct menu_get_info_from_server_argument_t*)arguments)->mut_exit;
+  free((struct menu_get_info_from_server_argument_t*)arguments);
 
-	struct recivesock rec;
-	while(1){
-		if(recv(my->sock, &rec, sizeof(rec), 0) == 0){
-			log(my->fd, "Lost conection whith server\n");
-			my->status = EXIT;
-			pthread_mutex_unlock(mut_exit);
-			return NULL;
-		}
-		my->id = rec.id;
-		if(rec.code < 1024){
-			my->change_status(&rec);
-			pthread_mutex_unlock(mut_exit);
-			return NULL;
-		}
-	}
-	pthread_mutex_unlock(mut_exit);
-	return NULL;
+  struct recivesock rec;
+  int bytes_read = 0;
+
+  while(1){
+    bytes_read = recv(my->sock, &rec, sizeof(rec), 0);
+    log(my->fd, "bytes_read: %d\n", bytes_read);
+    if(bytes_read == 0){
+      log(my->fd, "Lost conection with server\n");
+      my->status = EXIT;
+      pthread_mutex_unlock(mut_exit);
+      return NULL;
+    }
+    if (bytes_read != -1){
+      log(my->fd, "recive rec_code: %d %zu %d\n", rec.code, rec.id, bytes_read);
+      if(rec.id != 0){
+        my->id = rec.id;
+      }
+      if(rec.code < 1024){
+        if (my->change_status(&rec) != 0){
+          pthread_mutex_unlock(mut_exit);
+          return NULL;
+        }
+      }
+    }
+  }
+  pthread_mutex_unlock(mut_exit);
+  return NULL;
 }
 
 

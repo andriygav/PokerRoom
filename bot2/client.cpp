@@ -120,20 +120,24 @@ client::client(int status, int sock, bool* argument, int fildis) {
 }
 
 int client::change_status(struct recivesock* rec) {
-  this->status = rec->code;
   if (rec->code == EXIT) {
+    this->status = rec->code;
     return EXIT;
   }
   if (rec->code == FIRST_STATUS) {
+    this->status = rec->code;
     return FIRST_STATUS;
   }
   if (rec->code == MENU) {
+    this->status = rec->code;
     return MENU;
   }
   if (rec->code == HELP) {
+    this->status = rec->code;
     return HELP;
   }
   if (rec->code == GAME) {
+    this->status = rec->code;
     return GAME;
   }
   return 0;
@@ -168,9 +172,14 @@ int client::first_state() {
       return EXIT;
     }
     if (bytes_read != -1) {
-      this->id = rec.id;
-      if (rec.code < 1024) {
-        return this->change_status(&rec);
+      if(rec.id != 0){
+        this->id = rec.id;
+        if (rec.code < 1024) {
+          int ret = this->change_status(&rec);
+          if(ret != 0){
+            return ret;
+          }
+        }
       }
     }
     if (myscanf(rbuf)) {
@@ -180,8 +189,6 @@ int client::first_state() {
       }
     }
   }
-
-  return 0;
 }
 
 int client::menu() {

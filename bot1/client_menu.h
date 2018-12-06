@@ -8,25 +8,34 @@ struct menu_get_info_from_server_argument_t{
   pthread_mutex_t* mut_exit;
 };
 
-void* menu_get_info_from_server(void* arguments) {
+void* menu_get_info_from_server(void* arguments){
   client* my = ((struct menu_get_info_from_server_argument_t*)arguments)->my;
-  pthread_mutex_t* mut_exit =
-      ((struct menu_get_info_from_server_argument_t*)arguments)->mut_exit;
+  pthread_mutex_t* mut_exit = ((struct menu_get_info_from_server_argument_t*)arguments)->mut_exit;
   free((struct menu_get_info_from_server_argument_t*)arguments);
 
   struct recivesock rec;
-  while (1) {
-    if (recv(my->sock, &rec, sizeof(rec), 0) == 0) {
-      log(my->fd, "Lost conection whith server\n");
+  int bytes_read = 0;
+
+  while(1){
+    bytes_read = recv(my->sock, &rec, sizeof(rec), 0);
+    log(my->fd, "bytes_read: %d\n", bytes_read);
+    if(bytes_read == 0){
+      log(my->fd, "Lost conection with server\n");
       my->status = EXIT;
       pthread_mutex_unlock(mut_exit);
       return NULL;
     }
-    my->id = rec.id;
-    if (rec.code < 1024) {
-      my->change_status(&rec);
-      pthread_mutex_unlock(mut_exit);
-      return NULL;
+    if (bytes_read != -1){
+      log(my->fd, "recive rec_code: %d %zu %d\n", rec.code, rec.id, bytes_read);
+      if(rec.id != 0){
+        my->id = rec.id;
+      }
+      if(rec.code < 1024){
+        if (my->change_status(&rec) != 0){
+          pthread_mutex_unlock(mut_exit);
+          return NULL;
+        }
+      }
     }
   }
   pthread_mutex_unlock(mut_exit);

@@ -173,10 +173,15 @@ int client::first_state() {
       return EXIT;
     }
     if (bytes_read != -1) {
-      this->id = rec.id;
-      if (rec.code < 1024) {
-        return this->change_status(&rec);
-      }
+    	if(rec.id != 0){
+    		this->id = rec.id;
+    		if (rec.code < 1024) {
+	      	int ret = this->change_status(&rec);
+	      	if(ret != 0){
+	      		return ret;
+	      	}
+	      }
+    	}
     }
     if (myscanf(rbuf)) {
       if (!strncmp(rbuf, "exit", 4)) {

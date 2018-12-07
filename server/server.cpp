@@ -753,6 +753,8 @@ int start_server(int port, const char* adr, int md, struct table_t* tb) {
     return 1;
   }
 
+
+
   addr.sin_family = AF_INET;
   addr.sin_port = htons(port);
   addr.sin_addr.s_addr = inet_addr(adr);
@@ -770,16 +772,21 @@ int start_server(int port, const char* adr, int md, struct table_t* tb) {
 
   struct authentication_t authent_rec;
 
+  int fd = open("log/Server", O_CREAT | O_RDWR | O_APPEND, 0666);
+
+  log(fd, "##START##\n");
   while (1) {
  whil:
     sock = accept(listener, NULL, NULL);
+    log(fd, "###New Conection###\n", sock);
+    log(fd, "get new sock: %d\n", sock);
     if (sock < 0) {
       perror("Прием входящих подключений");
       return 1;
     }
 
     bytes_read = recv(sock, &authent_rec, sizeof(authent_rec), MSG_WAITALL);
-
+    log(fd, "bytes_read: %d\n", bytes_read);
     if (bytes_read == 0) {
       goto whil;
     }
@@ -790,6 +797,7 @@ int start_server(int port, const char* adr, int md, struct table_t* tb) {
     	authent_rec.status = CLIENT;
     }
 
+    log(fd, "send: %d\n", authent_rec.status);
     send(sock, &authent_rec, sizeof(authent_rec), 0);
 
     if(authent_rec.status == CLIENT){
@@ -798,7 +806,7 @@ int start_server(int port, const char* adr, int md, struct table_t* tb) {
 	    for (int i = 1; i < MAX_CLIENT_NUM; i++) {
 	      if (tb->arr[i] == 0) {
 	        tb->arr[i] = 1;
-          snprintf(tb->login[i], 256, "%s", authent_rec.login);
+          	snprintf(tb->login[i], 256, "%s", authent_rec.login);
 	        k = i;
 	        break;
 	      }
@@ -843,6 +851,7 @@ int start_server(int port, const char* adr, int md, struct table_t* tb) {
 	}
 
   }
+  log(fd, "##END##\n");
   return 0;
 }
 
@@ -1295,7 +1304,7 @@ whil:
 						break;
 				}
 			}
-			if(num >= 0){
+			if(num > 0){
 				if(tb->arr[num]){
 					msg_from_serv.num = num;
 					msg_from_serv.comand = SERVER_COMAND_EXIT;
@@ -1303,7 +1312,7 @@ whil:
 					tb->arr[num] = 0;	
 				}
 			}else if(num == -1){
-				for(int i = 0; i < MAX_CLIENT_NUM; i++){
+				for(int i = 1; i < MAX_CLIENT_NUM; i++){
 					if(tb->arr[i]){
 						msg_from_serv.num = i;
 						msg_from_serv.comand = SERVER_COMAND_EXIT;
@@ -1322,26 +1331,26 @@ whil:
 			}
 			printf("\n");
 		}
-    if(!strncmp(buf, "showclient", 10)){
-      optind = 1;
-      optarg = NULL;
-      int opt = 0;
-      int num = -1;
-      while((opt = getopt(argc, argv, "n:")) != -1) {
-        switch (opt){
-          case 'n':
-            num = atoi(optarg);
-            optarg = NULL;
-            break;
-          default:
-            break;
-        }
-      }
-      if(num > -1){
-        printf("\n------------------------SHOW CLIENT------------------------\n");
-        printf("%d:\t%s\n", num, tb->login[num]);
-      }
-    }
+	    if(!strncmp(buf, "showclient", 10)){
+			optind = 1;
+			optarg = NULL;
+			int opt = 0;
+			int num = -1;
+			while((opt = getopt(argc, argv, "n:")) != -1) {
+				switch (opt){
+				  case 'n':
+				    num = atoi(optarg);
+				    optarg = NULL;
+				    break;
+				  default:
+				    break;
+				}
+			}
+			if(num > -1){
+			printf("\n------------------------SHOW CLIENT------------------------\n");
+			printf("%d:\t%s\n", num, tb->login[num]);
+			}
+	    }
 		if(!strncmp(buf, "showroomlog", 11)){
 			int num = -1;
 			int opt = 0;

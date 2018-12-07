@@ -233,6 +233,7 @@ char* conv(char* str, int num) {
       sprintf(str + 1, "1");
       break;
   }
+  return str;
 }
 
 int count_comb(struct card arr[]) {

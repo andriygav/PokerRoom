@@ -28,7 +28,7 @@ brew install cmake
 ~PokerRoom $ cmake ./
 ~PokerRoom $ make
 ```
-all bin-files are in folder 'bin', and to "launching all bin you should do only in 'bin'".
+Все исполняемые файлы находятся в папке bin и запуск нужно осуществлять из неё.
 
 ## Инструкция по работе с проектом
 

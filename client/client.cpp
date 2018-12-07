@@ -95,6 +95,9 @@ int client_t::show_all_inf_to_console(){
 		if(this->final_table[i] == 1){
 			printf("\x1b[32m");
 		}
+		if(this->player[i].status == 2){
+			printf("\x1b[93m");
+		}
 
 
 		printf("%-8s\t%d\t%-12.1lf\t%.1lf\t", this->player[i].login, this->player[i].status, this->player[i].cash, this->player[i].bet);
@@ -111,6 +114,8 @@ int client_t::show_all_inf_to_console(){
 		}
 		printf("\x1b[0m");
 	}
+	printf("->game->");
+	fflush(stdout);
 	return 0;
 }
 

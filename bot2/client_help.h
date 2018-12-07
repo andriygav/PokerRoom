@@ -17,7 +17,7 @@ void* help_get_info_from_server(void* arguments){
   int bytes_read = 0;
   while(1){
 whil:
-    bytes_read = recv(my->sock, &rec, sizeof(rec), 0);
+    bytes_read = recv(my->sock, &rec, sizeof(rec), MSG_WAITALL);
     if(bytes_read == 0){
       log(my->fd, "Lost conection whith server\n");
       my->status = EXIT;

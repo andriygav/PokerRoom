@@ -342,8 +342,10 @@ int client_t::menu(){
 	
 	pthread_cancel(menu_get_info_from_server_thread);
 	
-	if(this->argument['t'])
+	if(this->argument['t']){
+		pthread_kill(menu_scanf_thread, SIGQUIT);
 		pthread_cancel(menu_scanf_thread);
+	}
 
 	if(!this->argument['T']){
 		SDL_Event event;
@@ -413,6 +415,7 @@ int client_t::help(){
 	pthread_cancel(help_get_info_from_server_thread);
 	
 	if(this->argument['t'])
+		pthread_kill(help_scanf_thread, SIGQUIT);
 		pthread_cancel(help_scanf_thread);
 
 	if(!this->argument['T']){
@@ -495,6 +498,7 @@ int client_t::game(){
 	pthread_cancel(game_get_info_from_server_thread);
 	
 	if(this->argument['t'])
+		pthread_kill(game_scanf_thread, SIGQUIT);
 		pthread_cancel(game_scanf_thread);
 
 	if(!this->argument['T']){

@@ -538,6 +538,9 @@ void* game_scanf(void* arguments){
 		}
 		rl_attempted_completion_function = completion;
 		buf = readline("->game->");
+		if(buf == NULL){
+			goto out;
+		}
 		add_history(buf);
 		optind = 1;
 

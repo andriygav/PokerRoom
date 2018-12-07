@@ -18,7 +18,7 @@ void* menu_get_info_from_server(void* arguments){
 
   while(1){
 whil:
-    bytes_read = recv(my->sock, &rec, sizeof(rec), 0);
+    bytes_read = recv(my->sock, &rec, sizeof(rec), MSG_WAITALL);
     log(my->fd, "bytes_read: %d\n", bytes_read);
     if(bytes_read == 0){
       log(my->fd, "Lost conection with server\n");

@@ -428,6 +428,9 @@ void* help_scanf(void* arguments){
 	while(1){
 		rl_attempted_completion_function = completion;
 		buf = readline("->help->");
+		if(buf == NULL){
+			goto out;
+		}
 		add_history(buf);
 
 		snprintf(rbuf.buf, 256, "%s", buf);

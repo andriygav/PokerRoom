@@ -225,6 +225,9 @@ void* menu_scanf(void* arguments){
 		}
 		rl_attempted_completion_function = completion;
 		buf = readline("->menu->");
+		if(buf == NULL){
+			goto out;
+		}
 		add_history(buf);
 		optind = 1;
 		snprintf(rbuf.buf, 256, "%s", buf);

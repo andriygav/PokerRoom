@@ -144,8 +144,6 @@ int main(int argc, char **argv){
     	log(fd, "Connect: %s", strerror(errno));
     	return 1;
     }
-    printf("%d\n", 	bytes_read);
-    printf("%d\n", 	authent_rec.status);
 //Conect(end)
     if(authent_rec.status == CLIENT){
 		client_t obj(FIRST_STATUS, sock, argument, fd, authent_rec.login);

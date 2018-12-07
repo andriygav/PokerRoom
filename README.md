@@ -129,7 +129,7 @@ RAISE(поднять ставку на "x" денег, в графическом
 ### Starter
 Для простоты, можно добавить в игру сразу несколько ботов для этого используется команда ниже, где [-g] флаг нужен, чтобы боты сразу перешли в игру с меню. n --- это количество ботов. i = 1...4 --- это номер бота.
 ```
-~PokerRoom/bin $ ./Poker n ./bot[i]_client [-g]
+~PokerRoom/bin $ ./Poker n ./bot[i]_client [-g] [-p port] [-a address]
 ```
 ### Bots
 There are 4 types of bot. bot1 and bot2 are bots with gaming AI (if-bots), and bot3 and bot4 and neyral networks bots.

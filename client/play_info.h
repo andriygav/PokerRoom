@@ -1,6 +1,13 @@
 #pragma once
 
 #pragma pack(push, 1)
+struct recvsock_admin {
+  size_t id;
+  char str[256];
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
 struct publplayinfo {
   char login[256];
   double cash;

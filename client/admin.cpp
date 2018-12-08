@@ -23,9 +23,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdarg.h>
-#include "admin.h"
 #include <readline/readline.h>
 #include <readline/history.h>
+#include "admin.h"
 
 static int log(int md, const char* format, ...){
 	char str[256];
@@ -39,10 +39,57 @@ static int log(int md, const char* format, ...){
 	return 0;
 }
 
+struct admin_menu_get_info_from_server_argument_t{
+	admin_t* my;
+	pthread_mutex_t* mut_exit;
+};
+
+struct admin_menu_scanf_argument_t{
+	admin_t* my;
+	pthread_mutex_t* mut_exit;
+};
+
+void* admin_menu_get_info_from_server(void* arguments){
+	admin_t* my = ((struct admin_menu_get_info_from_server_argument_t*)arguments)->my;
+	pthread_mutex_t* mut_exit = ((struct admin_menu_get_info_from_server_argument_t*)arguments)->mut_exit;
+	free((struct admin_menu_get_info_from_server_argument_t*)arguments);
+
+	struct recvsock_admin rec;
+
+	int bytes_read = 0;
+
+	while(1){
+whil:
+		bytes_read = recv(my->sock, &rec, sizeof(rec), MSG_WAITALL);
+		log(my->fd, "bytes_read: %d\n", bytes_read);
+		if(bytes_read == 0){
+			log(my->fd, "Lost conection with server\n");
+			my->status = EXIT;
+			pthread_mutex_unlock(mut_exit);
+			return NULL;
+		}
+		if (bytes_read != -1){
+			log(my->fd, "recive rec_id: %zu %d\n", rec.id, bytes_read);
+			if(rec.id != 0){
+				my->id = rec.id;
+				printf("\n%s\n", rec.str);
+				printf("->");
+				fflush(stdout);
+
+			}else{
+				goto whil;
+			}
+			
+		}
+	}
+	pthread_mutex_unlock(mut_exit);
+	return NULL;
+}
+
 
 static const char *newEnv[] = {
 	"exit",
-	"restart",
+	"room",
 	NULL
 };
 
@@ -69,20 +116,14 @@ static char **completion(const char *text, int start, int end){
 	return rl_completion_matches(text, generator);
 }
 
-struct admin_scanf_argument_t{
-	class admin_t* my;
-};
-
-static void* menu_scanf(void* arguments){
-	admin_t* my = ((struct admin_scanf_argument_t*)arguments)->my;
-	free((struct admin_scanf_argument_t*)arguments);
+static void* admin_menu_scanf(void* arguments){
+	admin_t* my = ((struct admin_menu_scanf_argument_t*)arguments)->my;
+	pthread_mutex_t* mut_exit = ((struct admin_menu_scanf_argument_t*)arguments)->mut_exit;
+	free((struct admin_menu_scanf_argument_t*)arguments);
 
 	char * buf = NULL;
 
-	char sendbuf[256];
-	for(int i = 0; i < 256; i++){
-		sendbuf[i] = 0;
-	}
+	struct recvsock_admin rec;
 
 	while(1){
 		if(buf != NULL){
@@ -96,20 +137,18 @@ static void* menu_scanf(void* arguments){
 		}
 		add_history(buf);
 		optind = 1;
-
-		snprintf(sendbuf, 256, "%s", buf);
-
-		if(!strncmp(sendbuf, "exit", 4)){
+		snprintf(rec.str, 256, "%s", buf);
+		if(!strncmp(buf, "exit", 4)){
 			my->status = EXIT;
-			send(my->sock, &sendbuf, sizeof(sendbuf), 0);
+			rec.id = my->id;
+			send(my->sock, &rec, sizeof(rec), 0);
 			goto out;
-		}
-		if(!strncmp(sendbuf, "restart", 7)){
-			my->status = EXIT;
-			send(my->sock, &sendbuf, sizeof(sendbuf), 0);
-			goto out;
+		}else if(!strncmp(buf, "room", 4)){
+			rec.id = my->id;
+			send(my->sock, &rec, sizeof(rec), 0);
 		}
 	}
+	pthread_mutex_unlock(mut_exit);
 out:
 	if(buf != NULL){
 		free(buf);
@@ -119,14 +158,38 @@ out:
 }
 
 int admin_t::menu(){
-	void* argv;
-	argv = (struct admin_scanf_argument_t*)malloc(sizeof(struct admin_scanf_argument_t));
-	((struct admin_scanf_argument_t*)argv)->my = this;
 
+	pthread_mutex_t* mut_exit = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+	if(pthread_mutex_init(mut_exit, NULL)){
+		log(this->fd, "menu mut_exit - init: %s", strerror(errno));
+		return 0;	
+	}
+	pthread_mutex_lock(mut_exit);
+
+	void* argv;
 	pthread_t menu_scanf_thread = 0;
-	pthread_create(&menu_scanf_thread, NULL, menu_scanf, argv);
+	argv = (struct admin_menu_scanf_argument_t*)malloc(sizeof(struct admin_menu_scanf_argument_t));
+	((struct admin_menu_scanf_argument_t*)argv)->my = this;
+	((struct admin_menu_scanf_argument_t*)argv)->mut_exit = mut_exit;
+	pthread_create(&menu_scanf_thread, NULL, admin_menu_scanf, argv);
+
+	pthread_t menu_get_info_from_server_thread = 0;
+	argv = (struct admin_menu_get_info_from_server_argument_t*)malloc(sizeof(struct admin_menu_get_info_from_server_argument_t));
+	((struct admin_menu_get_info_from_server_argument_t*)argv)->my = this;
+	((struct admin_menu_get_info_from_server_argument_t*)argv)->mut_exit = mut_exit;
+	pthread_create(&menu_get_info_from_server_thread, NULL, admin_menu_get_info_from_server, argv);
+
+	pthread_mutex_lock(mut_exit);
+
+	pthread_cancel(menu_get_info_from_server_thread);
+	pthread_kill(menu_scanf_thread, SIGQUIT);
+	pthread_cancel(menu_scanf_thread);
 
 	pthread_join(menu_scanf_thread, NULL);
+	pthread_join(menu_get_info_from_server_thread, NULL);
+
+	pthread_mutex_destroy(mut_exit);
+	free(mut_exit);
 
 	return 0;
 }
@@ -139,11 +202,7 @@ admin_t::admin_t(int status, int sock, bool* argument, int fd){
 	for(int i = 0; i < 256; i++){
 		this->argument[i] = argument[i];
 	}
+	this->id = 0;
 }
 
 admin_t::~admin_t(){}
-
-
-
-
-

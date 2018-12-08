@@ -15,5 +15,6 @@ class admin_t{
 		int status;
 		int sock;
 		int fd;
+		int id;
 };
 

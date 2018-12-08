@@ -163,8 +163,7 @@ void* client_get_info_from_server(void* arguments) {
   }
 
   while (1) {
-    if (msgrcv(md, (void*)(&msg_from_serv), sizeof(msg_from_serv), num, 0) ==
-        -1) {
+    if (msgrcv(md, (void*)(&msg_from_serv), sizeof(msg_from_serv), num, 0) == -1) {
       log(fd, "msgrcv on client from server: %s", strerror(errno));
       return nullptr;
     }
@@ -240,8 +239,7 @@ void* client_get_info_from_pokerroom(void* arguments) {
   msg_from_serv.comand = 0;
 
   while (1) {
-    if (msgrcv(cl->PokMesDis, (void*)(&msg_recive), sizeof(msg_recive), num,
-               0) == -1) {
+    if (msgrcv(cl->PokMesDis, (void*)(&msg_recive), sizeof(msg_recive), num, 0) == -1) {
       log(fd, "msgrcv on client from poker: %s", strerror(errno));
       msg_from_serv.comand = SERVER_COMAND_EXIT;
       msg_from_serv.num = num;
@@ -556,8 +554,7 @@ void* client_get_info_from_client(void* arguments) {
   }
   msg_from_serv.comand = SERVER_COMAND_EXIT;
   msg_from_serv.num = num;
-  msgsnd(md, (void*)(&msg_from_serv),
-         sizeof(msg_from_serv) - sizeof(msg_from_serv.num), 0);
+  msgsnd(md, (void*)(&msg_from_serv), sizeof(msg_from_serv) - sizeof(msg_from_serv.num), 0);
   return nullptr;
 }
 
@@ -628,70 +625,97 @@ void* client(void* arguments) {
   pthread_join(client_get_info_from_server_thread, NULL);
   pthread_cancel(client_get_info_from_client_thread);
   pthread_join(client_get_info_from_client_thread, NULL);
-  close(sock);
 
+  close(sock);
+  log(fd, "close sock:\n");
+  close(fd);
   free(id);
   pthread_exit(NULL);
 }
 
 int create_room(struct table_t* tb, int md, int num, FILE* file) {
-  if (num < COUNT_OF_ROOM) {
-    pthread_mutex_lock(&(tb->mut_read_client));
-    if (tb->cl[num].PokMesDis == -1) {
-      printf("create room №%d\n", num);
-      tb->cl[num].PokMesDis = msgget(IPC_PRIVATE, IPC_CREAT | IPC_EXCL | 0666);
-      if (tb->cl[num].PokMesDis == -1) {
-        perror("msgget");
-        pthread_mutex_unlock(&(tb->mut_read_client));
-        return 1;
-      }
-      struct poker_argumets_t* argv =
-          (struct poker_argumets_t*)malloc(sizeof(struct poker_argumets_t));
-      argv->mds = md;
-      argv->cl = &(tb->cl[num]);
-      argv->tb = tb;
-      argv->num = num;
-      argv->file = file;
-      tb->thread_poker[num] = 0;
-      pthread_create(&(tb->thread_poker[num]), NULL, poker, (void*)argv);
-    }
-    pthread_mutex_unlock(&(tb->mut_read_client));
-  }
-  return 0;
+	int ret = 1;
+	if (num < COUNT_OF_ROOM) {
+		pthread_mutex_lock(&(tb->mut_read_client));
+		if (tb->cl[num].PokMesDis == -1) {
+			tb->cl[num].PokMesDis = msgget(IPC_PRIVATE, IPC_CREAT | IPC_EXCL | 0666);
+			if (tb->cl[num].PokMesDis == -1) {
+				perror("msgget");
+				pthread_mutex_unlock(&(tb->mut_read_client));
+				return ret;
+			}
+			ret = 0;
+			struct poker_argumets_t* argv = (struct poker_argumets_t*)malloc(sizeof(struct poker_argumets_t));
+			argv->mds = md;
+			argv->cl = &(tb->cl[num]);
+			argv->tb = tb;
+			argv->num = num;
+			argv->file = file;
+			tb->thread_poker[num] = 0;
+			pthread_create(&(tb->thread_poker[num]), NULL, poker, (void*)argv);
+		}
+		pthread_mutex_unlock(&(tb->mut_read_client));
+	}
+	return ret;
 }
 
 
+void* admin_get_info_from_server(void* arguments) {
+	int sock = ((struct client_get_info_from_server_argumets_t*)arguments)->sock;
+	int md = ((struct client_get_info_from_server_argumets_t*)arguments)->md;
+	int num = ((struct client_get_info_from_server_argumets_t*)arguments)->num;
+	size_t* id = ((struct client_get_info_from_server_argumets_t*)arguments)->id;
+	int fd = ((struct client_get_info_from_server_argumets_t*)arguments)->fd;
+	struct table_t* tb = ((struct client_get_info_from_server_argumets_t*)arguments)->tb;
+	free((struct client_get_info_from_server_argumets_t*)arguments);
 
-#pragma pack(push, 1)
-struct admin_argumets_t {
-  int sock;
-  int md;
-  struct table_t* tb;
-};
-#pragma pack(pop)
+	struct msg_from_server_t msg_from_serv;
+	msg_from_serv.num = 0;
+	msg_from_serv.comand = 0;
 
-void* admin(void* arguments){
-	int sock = ((struct admin_argumets_t*)arguments)->sock;
-	int md = ((struct admin_argumets_t*)arguments)->md;
-	struct table_t* tb = ((struct admin_argumets_t*)arguments)->tb;
-	free(((struct client_argumets_t*)arguments));
+	struct recvsock_admin rec;
 
-	char buf[256];
-	for(int i = 0; i < 256; i++){
-		buf[i] = 0;
+	while (1) {
+		if (msgrcv(md, (void*)(&msg_from_serv), sizeof(msg_from_serv), num, 0) == -1) {
+			log(fd, "msgrcv on admin from server: %s", strerror(errno));
+			return nullptr;
+		}
+		switch (msg_from_serv.comand) {
+			case SERVER_COMAND_EXIT:
+				pthread_mutex_lock(&(tb->mut_read_client));
+				tb->arr[num] = 0;
+				pthread_mutex_unlock(&(tb->mut_read_client));
+				return nullptr;
+				break;
+		}
 	}
+  return nullptr;
+}
 
-	sprintf(buf, "log/ServerAdmin.log");
-    int fd = open(buf, O_CREAT | O_RDWR | O_APPEND, 0666);
+void* admin_get_info_from_admin(void* arguments){
+	int sock = ((struct client_get_info_from_client_argumets_t*)arguments)->sock;
+	int md = ((struct client_get_info_from_client_argumets_t*)arguments)->md;
+	int num = ((struct client_get_info_from_client_argumets_t*)arguments)->num;
+	size_t* id = ((struct client_get_info_from_client_argumets_t*)arguments)->id;
+	int fd = ((struct client_get_info_from_client_argumets_t*)arguments)->fd;
+	struct table_t* tb = ((struct client_get_info_from_client_argumets_t*)arguments)->tb;
 
-    int bytes_read = -1;
+	free((struct client_get_info_from_client_argumets_t*)arguments);
+
+	struct msg_from_server_t msg_from_serv;
+	msg_from_serv.num = 0;
+	msg_from_serv.comand = 0;
+
+	struct recvsock_admin rec;
+
+	char* buf;
+
+	int bytes_read = 0;
 
 	char** argv = NULL;
 	size_t argc = 0;
 
-
-	while(1){
-whil:		
+	while (1) {
 		if(argv != NULL){
 			for(size_t i = 0; i < argc; i++){
 				if(argv[i] != NULL){
@@ -703,32 +727,134 @@ whil:
 			argv = NULL;
 			argc = 0;
 		}
-
-	    bytes_read = recv(sock, &buf, sizeof(buf), MSG_WAITALL);
-	    if (bytes_read == 0) {
-  			close(sock);
-  			pthread_mutex_lock(&(tb->mut_read_client));
-  			tb->admin = 0;
-  			pthread_mutex_unlock(&(tb->mut_read_client));
-  			return nullptr;
-	    }
-
-	    argc = 0;
+		argc = 0;
 		optind = 1;
-		argv = get_argv(buf, &argc);
 
-	    log(fd, "admin: \"%s\"\n", buf);
-	    if (!strncmp(buf, "exit", 4)) {
-			close(sock);
-			pthread_mutex_lock(&(tb->mut_read_client));
-			tb->admin = 0;
-			pthread_mutex_unlock(&(tb->mut_read_client));
-			return nullptr;
-	    }
-      if(!strncmp(buf, "restart", 7)){
-        printf("%s\n", "restart\n");
-      }
+		bytes_read = recv(sock, &rec, sizeof(rec), MSG_WAITALL);
+		if (bytes_read == 0) {
+			log(fd, "Lost conection with %d\n", num);
+			goto out;
+		}
+		if (bytes_read > 0){
+			buf = rec.str;
+			log(fd, "%d %d: %s\n", bytes_read, rec.id, buf);
+			argv = get_argv(buf, &argc);
+			if (!strncmp(buf, "exit", 4) && rec.id == *id) {
+				goto out;
+	    	}else if (!strncmp(buf, "room", 4) && rec.id == *id){
+	    		int num = -2;
+	    		FILE* file = NULL;
+	    		int opt = 0;
+				optind = 1;
+				optarg = NULL;
+				while((opt = getopt(argc, argv, "n:f:")) != -1) {
+					switch (opt){
+						case 'n':
+							num = atoi(optarg);
+							optarg = NULL;
+							break;
+						case 'f':
+							file = fopen(optarg, "r");
+							if(!file)
+								perror(optarg);
+							optarg = NULL;
+							break;
+						default:
+							break;
+					}
+				}
+				if(num > -1){
+					if(!create_room(tb, md, num, file)){
+						log(fd, "create room №%d\n", num);
+						*id = next_id(*id);
+						rec.id = *id;
+            			snprintf(rec.str, 256, "create room №%d", num);
+						log(fd, "is send: %d\n", send(sock, &rec, sizeof(rec), 0));
+					}else{
+						log(fd, "can't create room №%d\n", num);
+						*id = next_id(*id);
+					  	rec.id = *id;
+            			snprintf(rec.str, 256, "can't create room №%d", num);
+						log(fd, "is send: %d\n", send(sock, &rec, sizeof(rec), 0));
+					}
+				}
+	    	}
+		}
 	}
+
+out:
+	msg_from_serv.comand = SERVER_COMAND_EXIT;
+	msg_from_serv.num = num;
+	msgsnd(md, (void*)(&msg_from_serv), sizeof(msg_from_serv) - sizeof(msg_from_serv.num), 0);
+	return nullptr;
+}
+
+
+void* admin(void* arguments){
+	int sock = ((struct client_argumets_t*)arguments)->sock;
+	int md = ((struct client_argumets_t*)arguments)->md;
+	int num = ((struct client_argumets_t*)arguments)->num;
+	struct table_t* tb = ((struct client_argumets_t*)arguments)->tb;
+	free(((struct client_argumets_t*)arguments));
+
+	char buf[256];
+	for(int i = 0; i < 256; i++){
+		buf[i] = 0;
+	}
+
+	char str[256];
+	for (int i = 0; i < 256; i++) {
+		str[i] = 0;
+	}
+	sprintf(str, "log/ServerAdminLog%d.log", num);
+	int fd = open(str, O_CREAT | O_RDWR | O_APPEND, 0666);
+
+	if (fd < 0) {
+		perror(str);
+		return nullptr;
+	}
+
+	int bytes_read = 0;
+	size_t* id = (size_t*)malloc(sizeof(size_t));
+	*id = next_id(time(NULL));
+
+	struct recvsock_admin rec;
+
+	rec.id = *id;
+    snprintf(rec.str, 256, "Welcom to admin console:");
+
+	log(fd, "is send: %d %zu\n", send(sock, &rec, sizeof(rec), 0), sizeof(rec));
+	void* argv;
+
+	pthread_t admin_get_info_from_admin_thread = 0;
+	argv = (struct client_get_info_from_client_argumets_t*)malloc(sizeof(struct client_get_info_from_client_argumets_t));
+	((struct client_get_info_from_client_argumets_t*)argv)->sock = sock;
+	((struct client_get_info_from_client_argumets_t*)argv)->md = md;
+	((struct client_get_info_from_client_argumets_t*)argv)->num = num;
+	((struct client_get_info_from_client_argumets_t*)argv)->id = id;
+	((struct client_get_info_from_client_argumets_t*)argv)->tb = tb;
+	((struct client_get_info_from_client_argumets_t*)argv)->fd = fd;
+	pthread_create(&(admin_get_info_from_admin_thread), NULL, admin_get_info_from_admin, argv);
+
+
+	pthread_t admin_get_info_from_server_thread = 0;
+	argv = (struct client_get_info_from_server_argumets_t*)malloc(sizeof(struct client_get_info_from_server_argumets_t));
+	((struct client_get_info_from_server_argumets_t*)argv)->sock = sock;
+	((struct client_get_info_from_server_argumets_t*)argv)->md = md;
+	((struct client_get_info_from_server_argumets_t*)argv)->num = num;
+	((struct client_get_info_from_server_argumets_t*)argv)->tb = tb;
+	((struct client_get_info_from_server_argumets_t*)argv)->id = id;
+	((struct client_get_info_from_server_argumets_t*)argv)->fd = fd;
+	pthread_create(&(admin_get_info_from_server_thread), NULL, admin_get_info_from_server, argv);
+
+	
+	pthread_join(admin_get_info_from_server_thread, NULL);
+	pthread_cancel(admin_get_info_from_admin_thread);
+	pthread_join(admin_get_info_from_admin_thread, NULL);
+
+	close(sock);
+	free(id);
+	pthread_exit(NULL);
 }
 
 #define ADMIN 0
@@ -753,8 +879,6 @@ int start_server(int port, const char* adr, int md, struct table_t* tb) {
     return 1;
   }
 
-
-
   addr.sin_family = AF_INET;
   addr.sin_port = htons(port);
   addr.sin_addr.s_addr = inet_addr(adr);
@@ -777,8 +901,11 @@ int start_server(int port, const char* adr, int md, struct table_t* tb) {
   log(fd, "##START##\n");
   while (1) {
  whil:
-    sock = accept(listener, NULL, NULL);
-    log(fd, "###New Conection###\n", sock);
+  	struct sockaddr_in clientaddr;
+    socklen_t clientaddr_size = sizeof(clientaddr);
+    sock = accept(listener, (struct sockaddr *)&clientaddr, &clientaddr_size);
+
+    log(fd, "###New Conection### %s\n", inet_ntoa(clientaddr.sin_addr));
     log(fd, "get new sock: %d\n", sock);
     if (sock < 0) {
       perror("Прием входящих подключений");
@@ -803,18 +930,18 @@ int start_server(int port, const char* adr, int md, struct table_t* tb) {
     if(authent_rec.status == CLIENT){
 	    int k = -1;
 	    pthread_mutex_lock(&(tb->mut_read_client));
-	    for (int i = 1; i < MAX_CLIENT_NUM; i++) {
+	    for (int i = 1; i < MAX_CLIENT_NUM - MAX_ADMIN_NUM; i++) {
 	      if (tb->arr[i] == 0) {
 	        tb->arr[i] = 1;
           	snprintf(tb->login[i], 256, "%s", authent_rec.login);
+          	snprintf(tb->ip[i], 20, "%s", inet_ntoa(clientaddr.sin_addr));
 	        k = i;
 	        break;
 	      }
 	    }
 	    pthread_mutex_unlock(&(tb->mut_read_client));
 	    if (k > 0) {
-	      struct client_argumets_t* argv =
-	          (struct client_argumets_t*)malloc(sizeof(struct client_argumets_t));
+	      struct client_argumets_t* argv = (struct client_argumets_t*)malloc(sizeof(struct client_argumets_t));
 	      argv->sock = sock;
 	      argv->md = md;
 	      argv->num = k;
@@ -826,28 +953,32 @@ int start_server(int port, const char* adr, int md, struct table_t* tb) {
 	      close(sock);
 	    }
 	}else if(authent_rec.status == ADMIN){
+		int k = -1;
+		pthread_mutex_lock(&(tb->mut_read_client));
+		for (int i = MAX_CLIENT_NUM - MAX_ADMIN_NUM; i < MAX_CLIENT_NUM; i++) {
+			if (tb->arr[i] == 0) {
+				tb->arr[i] = 1;
+				snprintf(tb->login[i], 256, "%s", authent_rec.login);
+				snprintf(tb->ip[i], 20, "%s", inet_ntoa(clientaddr.sin_addr));
+				k = i;
+				break;
+			}
+		}
+		pthread_mutex_unlock(&(tb->mut_read_client));
 
-		  int flag = 0;
-
-		  pthread_mutex_lock(&(tb->mut_read_client));
-		  if(tb->admin == 0){
-		  	flag = 1;
-		  	tb->admin = 1;
-		  }
-		  pthread_mutex_unlock(&(tb->mut_read_client));
-
-		  if(flag == 1){
-			  struct admin_argumets_t* argv =
-		          (struct admin_argumets_t*)malloc(sizeof(struct admin_argumets_t));
-		      argv->sock = sock;
-		      argv->md = md;
-		      argv->tb = tb;
-		      tb->thread_admin = 0;
-		      pthread_create(&(tb->thread_admin), NULL, admin, (void*)argv);
-		      pthread_detach(tb->thread_admin);
-	      }else{
-	      	close(sock);
-	      }
+		if(k > 0){
+			struct client_argumets_t* argv =
+	          (struct client_argumets_t*)malloc(sizeof(struct client_argumets_t));
+			argv->sock = sock;
+			argv->md = md;
+			argv->num = k;
+			argv->tb = tb;
+			tb->thread_client[k] = 0;
+			pthread_create(&(tb->thread_client[k]), NULL, admin, (void*)argv);
+			pthread_detach(tb->thread_client[k]);
+		}else{
+      		close(sock);
+      	}
 	}
 
   }
@@ -942,8 +1073,7 @@ static int show_stat(int num, struct table_t* tb) {
   char login[6][256];
   double cash[6];
   double max_cash[6] = {0, 0, 0, 0, 0, 0};
-  double min_cash[6] = {9999999999.0, 9999999999.0, 9999999999.0,
-                        9999999999.0, 9999999999.0, 9999999999.0};
+  double min_cash[6] = {9999999999.0, 9999999999.0, 9999999999.0, 9999999999.0, 9999999999.0, 9999999999.0};
   size_t winer[6] = {0, 0, 0, 0, 0, 0};
   size_t count_of_game[6] = {0, 0, 0, 0, 0, 0};
   double midle_win[6] = {0, 0, 0, 0, 0, 0};
@@ -1225,7 +1355,7 @@ whil:
 		argv = get_argv(buf, &argc);
 
 		if(!strncmp(buf, "exit", 4)){
-			for(int i = 0; i < MAX_CLIENT_NUM; i++){
+			for(int i = 1; i < MAX_CLIENT_NUM; i++){
 				if(tb->arr[i] != 0){
 					msg_from_serv.num = i;
 					msg_from_serv.comand = SERVER_COMAND_EXIT;
@@ -1282,10 +1412,10 @@ whil:
 				}
 			}
 			if(num > -1){
-				create_room(tb, md, num, file);
-			}else if(num == -1){
-				for(int num = 0; num < COUNT_OF_ROOM; num++){
-					create_room(tb, md, num, NULL);
+				if(!create_room(tb, md, num, file)){
+					printf("create room №%d\n", num);
+				}else{
+					printf("can't create room №%d\n", num);
 				}
 			}
 		}
@@ -1326,7 +1456,7 @@ whil:
 			printf("\n--------------------SHOW CONNECT PEOPLE--------------------\n");
 			for(int i = 0; i < MAX_CLIENT_NUM; i++){
 				if(tb->arr[i]){
-					printf("%d ", i);
+					printf("%-8d:%-8s\t%s\n", i, tb->login[i], tb->ip[i]);
 				}
 			}
 			printf("\n");
@@ -1537,7 +1667,8 @@ int main(int argc, char** argv) {
 
   kill(pid_server, SIGKILL);
   int status = 0;
-  if (pid_server != -1) wait(&status);
+  if (pid_server != -1) 
+  	wait(&status);
   pthread_mutex_destroy(&(tb->mut_read_client));
 
   shm_unlink("my_shared_memory");

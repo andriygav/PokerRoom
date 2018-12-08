@@ -175,6 +175,7 @@ whil:
 	pthread_mutex_unlock(mut_exit);
 	return NULL;
 }
+
 static const char *newEnv[] = {
 	"exit",
 	"game",

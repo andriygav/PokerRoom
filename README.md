@@ -5,7 +5,7 @@ This project is dedicated to make a remote server and client for Poker game. Aut
 
 ## Installation
 
-### Firstly, download this repository
+### Firstly, download repository
 ```
 git clone https://github.com/andriygav/PokerRoom.git
 ```

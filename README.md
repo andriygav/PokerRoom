@@ -94,7 +94,7 @@ By default client launches on address "127.0.0.1" with port "3425". To launch on
 ~PokerRoom/bin $ ./client [-T] [-t] [-p port] [-a address]
 ```
 
-Client has to modes: graphic and console.
+Client has two modes: graphic and console.
 
 By default grafic mode starts. 
 
@@ -116,32 +116,35 @@ To exit from client type "exit". Also, you can see all the existing commands usi
 ```
 ->game->
 ```
-From game you may go to menu or help by clicking appropriate command. Also, there is "disconnect" command which allows you to leave the room 
+From game you may go to menu or help by clicking appropriate command. Also, there is "disconnect" command which allows you to leave the room, but you lose lose all current achievements.
+The game starts when 6 players start game.
+There 
 Из игры вы можете перейти в меню или помощь при нажатии или вводе соответсвующей команды. Также есть команда disconnect(после ввода вы покидаете комнату и теряете все текущие достижение).
 Игра начинается только после того, как в комнату зайдет 6 человек и начнут игру.
-В игре присутствует 3 стандратных действия:
-CALL(принять ставку)
+The game has 3 standard actions:
+
+CALL (to accept bet)
 ```
 ->game->call
 ```
-FOLD(сбрость карты)
+FOLD (to discard cards)
 ```
 ->game->fold
 ```
-RAISE(поднять ставку на "x" денег, в графическом моде используйте ползунок, в консольном моде введите число)
+RAISE (to raise bet for x currency units(use scroller in grafic inteface version))
 ```
 ->game->raise x
 ```
-Для большей информации перейдите в help.
+For more detail information go to help.
 
 ### Starter
-Для простоты, можно добавить в игру сразу несколько ботов, для этого используется команда ниже, где [-g] флаг нужен для того, чтобы боты сразу перешли в игру с меню. n --- это количество ботов. i = 1...4 --- это номер бота.
+For simplicity, you can invite bots to game by using the command below, where [-g] flag is for redirrecting bots to game immediately after creating them. "n" is the number of bots you want to create and "i" (i = 1...4) is the identificator of bot.
 ```
 ~PokerRoom/bin $ ./Poker n ./bot[i]_client [-g] [-p port] [-a address]
 ```
 ### Bots
 There are 4 types of bot. bot1 and bot2 are bots with gaming AI (if-bots), and bot3 and bot4 and neyral networks bots.
-Each of bots you can launch with comand (where 'i' - is a number of bot i = 1...4)
+Each of bots you can launch with command (where 'i' - is a number of bot i = 1...4)
 ```
 ~project/bin $ ./bot'i'_client [-g]
 ``` 

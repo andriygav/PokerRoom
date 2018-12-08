@@ -13,6 +13,8 @@
 #define GAME 3
 #define FROM_TO_TABLE 1025
 #define SERVER_DISCONNECT_YOU 1026
+#define OK 0
+#define BAD -1
 
 static char** get_argv(const char* buf, size_t* count) {
   size_t len = strlen(buf);
@@ -1197,6 +1199,7 @@ void* get_comand_server(void* arguments){
 
 	char** argv = NULL;
 	size_t argc = 0;
+	int ReturnCode = BAD;
 
 
 	while(1){
@@ -1246,6 +1249,7 @@ whil:
 				}
 			}
 			msgctl(md, IPC_RMID, NULL);
+			ReturnCode = OK;
 			goto out;
 		}
 		if(argv == NULL){
@@ -1453,19 +1457,24 @@ out:
     buf = NULL;
   }
 
-  pthread_exit(NULL);
+  pthread_exit(&ReturnCode);
 }
 
 int main(int argc, char** argv) {
 
   int given_port = 3425;
   char* given_addres = (char*)"127.0.0.1";
+  int printTerminal = 1;
 
   optind = 1;
   optarg = NULL;
   int opt = 0;
-  while((opt = getopt(argc, argv, "p:a:")) != -1) {
+  while((opt = getopt(argc, argv, "dp:a:")) != -1) {
     switch (opt){
+      case 'd':
+        printTerminal = 0;
+        optarg = NULL;
+        break;
       case 'p':
         given_port = atoi(optarg);
         optarg = NULL;
@@ -1487,6 +1496,7 @@ int main(int argc, char** argv) {
 
   if (sd == -1) {
     perror("shm_open");
+    // shm_unlink("my_shared_memory");
     return 1;
   }
 
@@ -1517,29 +1527,31 @@ int main(int argc, char** argv) {
     tb->arr[i] = 0;
     tb->thread_client[i] = 0;
   }
-
   pid_server = fork();
 
   if (!pid_server) {
     return start_server(given_port, given_addres, md, tb);
   }
+  if (printTerminal) {
+    void* argv_for_send = (struct get_comand_server_argumets_t*)malloc(
+        sizeof(struct get_comand_server_argumets_t));
+    ((struct get_comand_server_argumets_t*)argv_for_send)->md = md;
+    ((struct get_comand_server_argumets_t*)argv_for_send)->tb = tb;
+    const char pwd[] = "->";
+    ((struct get_comand_server_argumets_t*)argv_for_send)->pwd = pwd;
 
-  void* argv_for_send = (struct get_comand_server_argumets_t*)malloc(
-      sizeof(struct get_comand_server_argumets_t));
-  ((struct get_comand_server_argumets_t*)argv_for_send)->md = md;
-  ((struct get_comand_server_argumets_t*)argv_for_send)->tb = tb;
-  const char pwd[] = "->";
-  ((struct get_comand_server_argumets_t*)argv_for_send)->pwd = pwd;
 
-  pthread_t thread = 0;
-  pthread_create(&(thread), NULL, get_comand_server, (void*)argv_for_send);
-  pthread_join(thread, NULL);
+    pthread_t thread = 0;
+    pthread_create(&(thread), NULL, get_comand_server, (void *) argv_for_send);
+    pthread_join(thread, NULL);
 
-  kill(pid_server, SIGKILL);
-  int status = 0;
-  if (pid_server != -1) wait(&status);
-  pthread_mutex_destroy(&(tb->mut_read_client));
+    kill(pid_server, SIGKILL);
 
-  shm_unlink("my_shared_memory");
+    int status = 0;
+    if (pid_server != -1) wait(&status);
+    pthread_mutex_destroy(&(tb->mut_read_client));
+
+    shm_unlink("my_shared_memory");
+  }
   return 0;
 }

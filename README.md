@@ -25,8 +25,9 @@ brew install cmake
 ### Компиляция всего проекта:
 
 ```
-~PokerRoom $ cmake ./
-~PokerRoom $ make
+~PokerRoom $ mkdir build && cd build
+~PokerRoom/build $ cmake ../
+~PokerRoom/build $ make
 ```
 Все исполняемые файлы находятся в папке bin и запуск нужно осуществлять из неё.
 

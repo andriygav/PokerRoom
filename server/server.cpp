@@ -14,6 +14,236 @@
 #define FROM_TO_TABLE 1025
 #define SERVER_DISCONNECT_YOU 1026
 
+#define ONLY_STR 1
+#define SHOWROOMLOG 2
+
+static int get_stat(struct statistick_table_t* stat, int num, struct table_t* tb){
+  if (num > COUNT_OF_ROOM) 
+  	return 1;
+
+  char str[256];
+  for (int i = 0; i < 256; i++) str[i] = 0;
+  sprintf(str, "log/PokerRoomLog%d.log", num);
+  int fd = open(str, O_RDONLY, 0666);
+  if (fd < 0) {
+    return 1;
+  }
+  long pos = lseek(fd, tb->cl[num].offset, SEEK_SET);
+  char buff[256];
+  int ret = 0;
+  size_t j = 0;
+
+  // statistic table
+  bool exist[6] = {false, false, false, false, false, false};
+  char login[6][256];
+  for(int i =0; i < 6; i++){
+  	for(int j =0 ; j<256;j++){
+  		login[i][j] = 0;
+  	}
+  }
+  double cash[6];
+  double max_cash[6] = {0, 0, 0, 0, 0, 0};
+  double min_cash[6] = {9999999999.0, 9999999999.0, 9999999999.0, 9999999999.0, 9999999999.0, 9999999999.0};
+  size_t winer[6] = {0, 0, 0, 0, 0, 0};
+  size_t count_of_game[6] = {0, 0, 0, 0, 0, 0};
+  double midle_win[6] = {0, 0, 0, 0, 0, 0};
+  double midle_lost[6] = {0, 0, 0, 0, 0, 0};
+  int rebuy[6] = {0, 0, 0, 0, 0, 0};
+
+  bool end_game = false;
+  //---------------
+
+  while ((ret = read(fd, buff, sizeof(buff) - 1)) > 0) {
+    buff[ret] = 0;
+    size_t i = 0;
+    while (buff[i] != 0) {
+      str[j] = buff[i];
+      if (str[j] == '\n') {
+        str[j] = 0;
+        if (!strncmp(str, "#connect", 8)) {
+          int scanf_i = 0;
+          char scanf_login[256];
+          double scanf_cash = 0;
+          sscanf(str + 8, "%d %s %lf", &scanf_i, scanf_login, &scanf_cash);
+          if (scanf_i < 6 && scanf_i >= 0) {
+            exist[scanf_i] = true;
+            strncpy(login[scanf_i], scanf_login, 256);
+            cash[scanf_i] = scanf_cash;
+            max_cash[scanf_i] = cash[scanf_i];
+            min_cash[scanf_i] = cash[scanf_i];
+            midle_lost[scanf_i] = 0;
+            midle_win[scanf_i] = 0;
+            count_of_game[scanf_i] = 0;
+            winer[scanf_i] = 0;
+            count_of_game[scanf_i] = 0;
+            rebuy[scanf_i] = 0;
+          }
+        }
+        if (!strncmp(str, "#sRESULT", 8)) {
+          end_game = true;
+        }
+        if (!strncmp(str, "#qRESULT", 8)) {
+          end_game = false;
+        }
+        if (!strncmp(str, "#REBUY", 6)) {
+          int scanf_num = -1;
+          double scanf_cash = -1;
+          sscanf(str + 6, "%d %lf", &scanf_num, &scanf_cash);
+          if (scanf_num >= 0 && scanf_num <= 6) rebuy[scanf_num]++;
+          midle_win[scanf_num] -= scanf_cash;
+        }
+        if (!strncmp(str, "#RES", 4)) {
+          int scanf_i = 0;
+          int scanf_place = 0;
+          int scanf_comb = 0;
+          char scanf_login[256];
+          double scanf_cash = 0;
+          sscanf(str + 4, "%d %s %d %d %lf", &scanf_i, scanf_login,
+                 &scanf_place, &scanf_comb, &scanf_cash);
+
+          if (scanf_cash > cash[scanf_i]) {
+            midle_win[scanf_i] += scanf_cash - cash[scanf_i];
+          }
+
+          if (scanf_cash < cash[scanf_i]) {
+            midle_lost[scanf_i] += cash[scanf_i] - scanf_cash;
+          }
+
+          if (scanf_i < 6 && scanf_i >= 0) {
+            exist[scanf_i] = true;
+            cash[scanf_i] = scanf_cash;
+            if (cash[scanf_i] > max_cash[scanf_i])
+              max_cash[scanf_i] = cash[scanf_i];
+            if (cash[scanf_i] < min_cash[scanf_i])
+              min_cash[scanf_i] = cash[scanf_i];
+            count_of_game[scanf_i]++;
+            if (scanf_place == 1) {
+              winer[scanf_i]++;
+            }
+          }
+        }
+        j = -1;
+      }
+      i++;
+      j++;
+    }
+  }
+
+  for(int i = 0; i<6; i++){
+    stat->exist[i] = exist[i];
+    stat->cash[i] = cash[i];
+    stat->max_cash[i] = max_cash[i];
+    stat->min_cash[i] = min_cash[i];
+    stat->winer[i] = winer[i];
+    stat->count_of_game[i] = count_of_game[i];
+    stat->midle_win[i] = midle_win[i];
+    stat->midle_lost[i] = midle_lost[i];
+    stat->rebuy[i] = rebuy[i];
+    snprintf(stat->login[i], 256, "%s", login[i]);
+  }
+  stat->end_game = end_game;
+
+  return 0;
+}
+
+static int print_stat(struct statistick_table_t* stat){
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "login");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i]) printf("%-10s|", stat->login[i]);
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "cash");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i]) printf("%-10.2lf|", stat->cash[i]);
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "rebuy");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i]) printf("%-10d|", stat->rebuy[i]);
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "MAX cash");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i]) printf("%-10.2lf|", stat->max_cash[i]);
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "MIN cash");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i]) printf("%-10.2lf|", stat->min_cash[i]);
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "COUNT all");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i]) printf("%-10zu|", stat->count_of_game[i]);
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "COUNT won");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i]) printf("%-10zu|", stat->winer[i]);
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "won");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i]) printf("%-10.2lf|", stat->midle_win[i]);
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "lost");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i]) printf("%-10.2lf|", stat->midle_lost[i]);
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "MIDLE won");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i])
+      printf("%-10.2lf|", stat->midle_win[i] / ((double)stat->count_of_game[i]));
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "MIDLE lost");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i])
+      printf("%-10.2lf|", stat->midle_lost[i] / ((double)stat->count_of_game[i]));
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  return 0;
+}
+
+
 static char** get_argv(const char* buf, size_t* count) {
   size_t len = strlen(buf);
   char** argv = (char**)malloc((len + 1) * sizeof(char*));
@@ -188,7 +418,12 @@ void* client_get_info_from_server(void* arguments) {
         }
         tb->arr[num] = 0;
         pthread_mutex_unlock(&(tb->mut_read_client));
-        return nullptr;
+        rec.code = EXIT;
+        *id = next_id(*id);
+        rec.id = *id;
+        log(fd, "send rec code: %d\n", rec.code);
+        log(fd, "is send: %d\n", send(sock, &rec, sizeof(rec), 0));
+        return NULL;
         break;
       case SERVER_DESTROY_ROOM:
         rec.code = MENU;
@@ -430,8 +665,7 @@ void* client_get_info_from_client(void* arguments) {
         msg_to_room.buf.comand = CONECT;
         msg_to_room.buf.rs = 0;
         strncpy(msg_to_room.buf.login, rec_sock.login, 256);
-        msgsnd(cl->PokMesDis, (void*)(&msg_to_room), sizeof(msg_to_room.buf),
-               0);
+        msgsnd(cl->PokMesDis, (void*)(&msg_to_room), sizeof(msg_to_room.buf),0);
       } else {
         *id = next_id(*id);
         rec.code = MENU;
@@ -493,8 +727,7 @@ void* client_get_info_from_client(void* arguments) {
         msg_to_room.buf.comand = ACTION_FOLD;
         msg_to_room.buf.rs = 0;
         *id = next_id(*id);
-        msgsnd(cl->PokMesDis, (void*)(&msg_to_room), sizeof(msg_to_room.buf),
-               0);
+        msgsnd(cl->PokMesDis, (void*)(&msg_to_room), sizeof(msg_to_room.buf), 0);
       }
     } else if (!strncmp(rec_sock.buf, "raise", 5) && rec_sock.id == *id) {
       if (cl != NULL) {
@@ -576,6 +809,8 @@ void* client(void* arguments) {
   struct msg_from_room_t msg_recive;
   set_msg_from_room_t(&msg_recive, 0, NULL);
 
+  while (msgrcv(md, (void*)(&msg_recive), sizeof(msg_recive), num, IPC_NOWAIT) > 0);
+
   struct msg_from_server_t msg_from_serv;
   msg_from_serv.num = 0;
   msg_from_serv.comand = 0;
@@ -614,12 +849,11 @@ void* client(void* arguments) {
 
   pthread_join(client_get_info_from_server_thread, NULL);
   // pthread_cancel(client_get_info_from_client_thread);
+  close(sock);
   pthread_join(client_get_info_from_client_thread, NULL);
   if(client_get_info_from_pokerroom_thread){
   	pthread_join(client_get_info_from_pokerroom_thread, NULL);
   }
-
-  close(sock);
   log(fd, "close sock:\n");
   free(id);
   pthread_exit(NULL);
@@ -701,6 +935,12 @@ void* admin_get_info_from_admin(void* arguments){
 	msg_from_serv.comand = 0;
 
 	struct recvsock_admin rec;
+	for(int i = 0; i < 256; i++){
+		rec.str[i] = 0;
+	}
+	rec.comand = 0;
+	rec.id = 0;
+	set_statistick_table_t(&(rec.stat));
 
 	char* buf;
 
@@ -766,16 +1006,110 @@ void* admin_get_info_from_admin(void* arguments){
 						log(fd, "create room №%d\n", num);
 						*id = next_id(*id);
 						rec.id = *id;
+					  	rec.comand = ONLY_STR;
+					  	set_statistick_table_t(&(rec.stat));
             			snprintf(rec.str, 256, "create room №%d", num);
 						log(fd, "is send: %d\n", send(sock, &rec, sizeof(rec), 0));
 					}else{
 						log(fd, "can't create room №%d\n", num);
 						*id = next_id(*id);
 					  	rec.id = *id;
+					  	rec.comand = ONLY_STR;
+					  	set_statistick_table_t(&(rec.stat));
             			snprintf(rec.str, 256, "can't create room №%d", num);
 						log(fd, "is send: %d\n", send(sock, &rec, sizeof(rec), 0));
 					}
 				}
+	    	}else if(!strncmp(buf, "restart", 7) && rec.id == *id){
+	    		printf("%s\n", "restart");
+	    	}else if(!strncmp(buf, "kill", 4) && rec.id == *id){
+	    		int num = -2;
+				int opt = 0;
+				optind = 1;
+				optarg = NULL;
+				while((opt = getopt(argc, argv, "n:")) != -1) {
+					switch (opt){
+						case 'n':
+							num = atoi(optarg);
+							optarg = NULL;
+							break;
+						default:
+							break;
+					}
+				}
+				if(num > 0){
+					if(tb->arr[num]){
+						msg_from_serv.num = num;
+						msg_from_serv.comand = SERVER_COMAND_EXIT;
+						msgsnd(md, (void*)(&msg_from_serv), sizeof(msg_from_serv) - sizeof(msg_from_serv.num), 0);	
+					}
+				}if(num == -1){
+					for(int i = 1; i < MAX_CLIENT_NUM - MAX_ADMIN_NUM; i++){
+						if(tb->arr[i]){
+							msg_from_serv.num = i;
+							msg_from_serv.comand = SERVER_COMAND_EXIT;
+							msgsnd(md, (void*)(&msg_from_serv), sizeof(msg_from_serv) - sizeof(msg_from_serv.num), 0);
+						}
+					}
+				}
+	    	}if(!strncmp(buf, "showclient", 10) && rec.id == *id){
+				optind = 1;
+				optarg = NULL;
+				int opt = 0;
+				int num = -1;
+				while((opt = getopt(argc, argv, "n:")) != -1) {
+					switch (opt){
+					  case 'n':
+					    num = atoi(optarg);
+					    optarg = NULL;
+					    break;
+					  default:
+					    break;
+					}
+				}
+				if(num > -1){
+					if(tb->arr[num]){
+						snprintf(rec.str, 256, "%d:\t%-8s\t%s", num, tb->login[num], tb->ip[num]);
+					}else{
+						snprintf(rec.str, 256, "disconected");
+					}
+					*id = next_id(*id);
+					rec.id = *id;
+				  	rec.comand = ONLY_STR;
+				  	set_statistick_table_t(&(rec.stat));
+					log(fd, "is send: %d\n", send(sock, &rec, sizeof(rec), 0));
+				}
+	    	}if(!strncmp(buf, "showstat", 8) && rec.id == *id){
+	    		optind = 1;
+				optarg = NULL;
+				int opt = 0;
+				int num = -1;
+				while((opt = getopt(argc, argv, "n:")) != -1) {
+					switch (opt){
+					  case 'n':
+					    num = atoi(optarg);
+					    optarg = NULL;
+					    break;
+					  default:
+					    break;
+					}
+				}
+				if(num > -1){
+	    			if(!get_stat(&(rec.stat), num, tb)){
+	    				*id = next_id(*id);
+	    				rec.id = *id;
+	    				rec.comand = SHOWROOMLOG;
+	    				snprintf(rec.str, 256, "send");
+	    				log(fd, "is send: %d\n", send(sock, &rec, sizeof(rec), 0));
+	    			}else{
+	    				*id = next_id(*id);
+	    				rec.id = *id;
+	    				rec.comand = ONLY_STR;
+	    				snprintf(rec.str, 256, "any inforamation");
+	    				log(fd, "is send: %d\n", send(sock, &rec, sizeof(rec), 0));
+	    			}
+	    			
+	    		}
 	    	}
 		}
 	}
@@ -820,7 +1154,9 @@ void* admin(void* arguments){
 	for(int i = 0; i < 256; i++){
 		rec.str[i] = 0;
 	}
+	set_statistick_table_t(&(rec.stat));
 	rec.id = *id;
+	rec.comand = ONLY_STR;
     snprintf(rec.str, 256, "Welcom to admin console:");
 
 	log(fd, "is send: %d %zu\n", send(sock, &rec, sizeof(rec), 0), sizeof(rec));
@@ -1058,7 +1394,8 @@ static int show_room(int num, struct table_t* tb) {
 }
 
 static int show_stat(int num, struct table_t* tb) {
-  if (num > COUNT_OF_ROOM) return 1;
+  if (num > COUNT_OF_ROOM) 
+  	return 1;
 
   char str[256];
   for (int i = 0; i < 256; i++) str[i] = 0;
@@ -1162,6 +1499,8 @@ static int show_stat(int num, struct table_t* tb) {
       j++;
     }
   }
+  close(fd);
+
   printf(
       "---------------------------------------------------------------------"
       "-----------\n");
@@ -1255,8 +1594,6 @@ static int show_stat(int num, struct table_t* tb) {
   printf(
       "---------------------------------------------------------------------"
       "-----------\n");
-
-  close(fd);
 
   return 0;
 }
@@ -1443,7 +1780,6 @@ whil:
 					msg_from_serv.num = num;
 					msg_from_serv.comand = SERVER_COMAND_EXIT;
 					msgsnd(md, (void*)(&msg_from_serv), sizeof(msg_from_serv) - sizeof(msg_from_serv.num), 0);
-					tb->arr[num] = 0;	
 				}
 			}else if(num == -1){
 				for(int i = 1; i < MAX_CLIENT_NUM; i++){
@@ -1451,7 +1787,6 @@ whil:
 						msg_from_serv.num = i;
 						msg_from_serv.comand = SERVER_COMAND_EXIT;
 						msgsnd(md, (void*)(&msg_from_serv), sizeof(msg_from_serv) - sizeof(msg_from_serv.num), 0);
-						tb->arr[i] = 0;	
 					}
 				}
 			}
@@ -1622,23 +1957,25 @@ int main(int argc, char** argv) {
     perror("msgget in main");
     return 1;
   }
-  int sd = shm_open("my_shared_memory", O_CREAT | O_RDWR, 0666);
+  struct table_t* tb = NULL;
+  struct table_t tb_without_console;
+  if(printTerminal){
+  	int sd = shm_open("my_shared_memory", O_CREAT | O_RDWR, 0666);
 
-  if (sd == -1) {
-    perror("shm_open");
-    return 1;
+    if (sd == -1) {
+      perror("shm_open");
+      return 1;
+    }
+	if (ftruncate(sd, sizeof(struct table_t)) != 0) {
+      perror("ftruncate");
+      shm_unlink("my_shared_memory");
+      return 1;
+    }
+    tb = (struct table_t*)mmap(NULL, sizeof(struct table_t), PROT_WRITE | PROT_READ, MAP_SHARED, sd, 0);
+  }else{
+  	tb = &tb_without_console;
   }
-
-  int pid_server = -1;
-  if (ftruncate(sd, sizeof(struct table_t)) != 0) {
-    perror("ftruncate");
-    shm_unlink("my_shared_memory");
-    return 1;
-  }
-
-  struct table_t* tb = (struct table_t*)mmap(
-      NULL, sizeof(struct table_t), PROT_WRITE | PROT_READ, MAP_SHARED, sd, 0);
-
+ 
   if (pthread_mutex_init(&(tb->mut_read_client), NULL)) {
     perror("tb->mut_read_client - init");
     return 1;
@@ -1657,6 +1994,7 @@ int main(int argc, char** argv) {
     tb->thread_client[i] = 0;
   }
 
+  int pid_server = -1;
   pid_server = fork();
 
   if (!pid_server) {

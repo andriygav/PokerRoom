@@ -1,9 +1,63 @@
 #pragma once
 
 #pragma pack(push, 1)
+struct statistick_table_t{
+  bool exist[6];
+  char login[6][256];
+  double cash[6];
+  double max_cash[6];
+  double min_cash[6];
+  size_t winer[6];
+  size_t count_of_game[6];
+  double midle_win[6];
+  double midle_lost[6];
+  int rebuy[6];
+  bool end_game;
+};
+#pragma pack(pop)
+
+static int copy_statistick_table_t(struct statistick_table_t* from, struct statistick_table_t* to){
+    for(int i = 0; i<6; i++){
+        to->exist[i] = from->exist[i];
+        to->cash[i] = from->cash[i];
+        to->max_cash[i] = from->max_cash[i];
+        to->min_cash[i] = from->min_cash[i];
+        to->winer[i] = from->winer[i];
+        to->count_of_game[i] = from->count_of_game[i];
+        to->midle_win[i] = from->midle_win[i];
+        to->midle_lost[i] = from->midle_lost[i];
+        to->rebuy[i] = from->rebuy[i];
+        snprintf(to->login[i], 256, "%s", from->login[i]);
+    }
+    to->end_game = from->end_game;
+    return 0;
+}
+
+static int set_statistick_table_t(struct statistick_table_t* dest){
+  for(int i = 0; i < 6; i++){
+    dest->exist[i] = 0;
+    dest->cash[i] = 0;
+    dest->max_cash[i] = 0;
+    dest->min_cash[i] = 0;
+    dest->winer[i] = 0;
+    dest->count_of_game[i] = 0;
+    dest->midle_win[i] = 0;
+    dest->midle_lost[i] = 0;
+    dest->rebuy[i] = 0;
+    for(int j=0; j<256; j++){
+      dest->login[i][j] = 0;
+    }
+  }
+  dest->end_game = 0;
+  return 0;
+}
+
+#pragma pack(push, 1)
 struct recvsock_admin {
+  long comand;
   size_t id;
   char str[256];
+  struct statistick_table_t stat;
 };
 #pragma pack(pop)
 

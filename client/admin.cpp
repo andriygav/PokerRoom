@@ -49,6 +49,103 @@ struct admin_menu_scanf_argument_t{
 	pthread_mutex_t* mut_exit;
 };
 
+static int print_stat(struct statistick_table_t* stat){
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "login");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i]) printf("%-10s|", stat->login[i]);
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "cash");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i]) printf("%-10.2lf|", stat->cash[i]);
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "rebuy");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i]) printf("%-10d|", stat->rebuy[i]);
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "MAX cash");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i]) printf("%-10.2lf|", stat->max_cash[i]);
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "MIN cash");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i]) printf("%-10.2lf|", stat->min_cash[i]);
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "COUNT all");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i]) printf("%-10zu|", stat->count_of_game[i]);
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "COUNT won");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i]) printf("%-10zu|", stat->winer[i]);
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "won");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i]) printf("%-10.2lf|", stat->midle_win[i]);
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "lost");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i]) printf("%-10.2lf|", stat->midle_lost[i]);
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "MIDLE won");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i])
+      printf("%-10.2lf|", stat->midle_win[i] / ((double)stat->count_of_game[i]));
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  printf("%-10s|", "MIDLE lost");
+  for (int i = 0; i < 6; i++) {
+    if (stat->exist[i])
+      printf("%-10.2lf|", stat->midle_lost[i] / ((double)stat->count_of_game[i]));
+  }
+  printf("\n");
+  printf(
+      "---------------------------------------------------------------------"
+      "-----------\n");
+  return 0;
+}
+
 void* admin_menu_get_info_from_server(void* arguments){
 	admin_t* my = ((struct admin_menu_get_info_from_server_argument_t*)arguments)->my;
 	pthread_mutex_t* mut_exit = ((struct admin_menu_get_info_from_server_argument_t*)arguments)->mut_exit;
@@ -72,10 +169,14 @@ whil:
 			log(my->fd, "recive rec_id: %zu %d\n", rec.id, bytes_read);
 			if(rec.id != 0){
 				my->id = rec.id;
-				printf("\n%s\n", rec.str);
+				if(rec.comand == ONLY_STR){
+					printf("\n%s\n", rec.str);
+				}else if(rec.comand == SHOWROOMLOG){
+					printf("\n");
+					print_stat(&(rec.stat));
+				}
 				printf("->");
 				fflush(stdout);
-
 			}else{
 				goto whil;
 			}
@@ -90,6 +191,10 @@ whil:
 static const char *newEnv[] = {
 	"exit",
 	"room",
+	"restart",
+	"kill",
+	"showclient",
+	"showstat",
 	NULL
 };
 
@@ -144,6 +249,19 @@ static void* admin_menu_scanf(void* arguments){
 			send(my->sock, &rec, sizeof(rec), 0);
 			goto out;
 		}else if(!strncmp(buf, "room", 4)){
+			rec.id = my->id;
+			send(my->sock, &rec, sizeof(rec), 0);
+		}
+		else if(!strncmp(buf, "restart", 7)){
+			rec.id = my->id;
+			send(my->sock, &rec, sizeof(rec), 0);
+		}else if(!strncmp(buf, "kill", 4)){
+			rec.id = my->id;
+			send(my->sock, &rec, sizeof(rec), 0);
+		}else if(!strncmp(buf, "showclient", 10)){
+			rec.id = my->id;
+			send(my->sock, &rec, sizeof(rec), 0);
+		}else if(!strncmp(buf, "showstat", 8)){
 			rec.id = my->id;
 			send(my->sock, &rec, sizeof(rec), 0);
 		}

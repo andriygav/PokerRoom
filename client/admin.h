@@ -4,6 +4,9 @@
 #define EXIT -1
 #define MENU 1
 
+#define ONLY_STR 1
+#define SHOWROOMLOG 2
+
 class admin_t{
 	public:
 		bool argument[256];

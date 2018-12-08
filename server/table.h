@@ -4,7 +4,8 @@
 #include "count_comb.h"
 #include "play_info.h"
 
-#define MAX_CLIENT_NUM 2048
+#define MAX_CLIENT_NUM 2049
+#define MAX_ADMIN_NUM 1
 #define BIG_BLIND 1.0
 #define START_CASH 20000
 // ACTION TABLE
@@ -99,13 +100,13 @@ struct table_t {
   struct client cl[COUNT_OF_ROOM];
   char arr[MAX_CLIENT_NUM];
   char login[MAX_CLIENT_NUM][256];
+  char ip[MAX_CLIENT_NUM][20];
   pthread_t thread_poker[COUNT_OF_ROOM];
   pthread_t thread_client[MAX_CLIENT_NUM];
-  char admin;
-  pthread_t thread_admin;
   pthread_mutex_t mut_read_client;
 };
 #pragma pack(pop)
+
 #pragma pack(push, 1)
 struct privatplayinfo {
   int card_1;

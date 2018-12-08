@@ -1,13 +1,16 @@
-# Покерная комната
+# PokerRoom
 
-Этот проект посвящен написанию удаленного сервера и клиента для игры в покер. В качестве противника также могут быть автоматические боты.
+This project is dedicated to make a remote server and client for Poker game. Automatic bot can also be as an opponents.
+
 
 ## Installation
-### Сперва нужно загрузить этот репозиторий
+
+### Firstly, download repository
 ```
 git clone https://github.com/andriygav/PokerRoom.git
 ```
-### Для корректной работы вам нужны следующие библиотеки
+You need the followiong libraries for correct work
+### You need the followiong libraries for correct work
 ##### Linux (Ubuntu)
 ```
 sudo apt-get install libsdl1.2-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev
@@ -22,25 +25,25 @@ brew install sdl_ttf
 brew install cmake
 ```
 
-### Компиляция всего проекта:
+### Compilation of the whole project:
 
 ```
 ~PokerRoom $ mkdir build && cd build
 ~PokerRoom/build $ cmake ../
 ~PokerRoom/build $ make
 ```
-Все исполняемые файлы находятся в папке bin и запуск нужно осуществлять из неё.
+All executable files are in bin folder and the launch must be carried out from it.
 
-## Инструкция по работе с проектом
+## Instructions for working with project
 
 ### Server
-#### Запуск сервера
-По умолчанию сервер работает на локальном адресе "127.0.0.1" с портом "3425". Для того чтобы запустить на другом введите через аргумент командой строки.
+#### Server startup
+By defult server works on the local address "127.0.0.1" with port "3425". To lounch it on another address use the keys "-p" and "-a" for new port and address respectively. "-d" option is being used to run the server in the background.
 ```
-~PokerRoom/bin $ ./server [-p port] [-a address]
+~PokerRoom/bin $ ./server [-p port] [-a address] [-d]
 ```
-#### Команды сервера "->":
-Вы можете увидеть все команды нажав дважды 'tab'. Также работает автодополнение.
+#### Server commands "->":
+You can see all the existing commands using double 'tab'. Auto-completion also works.
 ```
 ->
 delroom      display      exit         kill         room         showroomlog
@@ -48,93 +51,100 @@ delroom      display      exit         kill         room         showroomlog
 exit  room
 
 ```
-Отключить сервер:
+Turn off server:
 ```
 ->exit
 ```
-Для создания комнат №i = 1..50, или же создание всех сразу i=-1 команда ниже.
+To create poker rooms №i = 1..50.
 ```
 ->room -n i
 ```
-Для удаления комнаты №i = 1..50, или же удаления всех сразу i=-1 команда ниже.
+To remove a room №i = 1..50.
 ```
 ->delroom -n i
 ```
-Для отключениия клиента №i от сервера команда ниже.
+To disconnect a client №i from server.
 ```
 ->kill -n i
 ```
-Для вывода логов комнаты №i используется команда ниже. Где введены флаги [-s] это вывод статистики по всем игрокам в комнате, и флаг [-f] для поиска по логам, найдет тот лог который начинается со строки str.
+To output the logs of the room №i use the command below. Use [-s] flag to output the all players statistics and [-f] flag to find by log. Can only find log begining from the string str.
+
 ```
 ->showroomlog -n i [-s] [-f str]
 ```
-Также доступен режим наблюдения при помощи sdl:
+It is also monitoring mode avaliable using stl:
 ```
 ->display
 ```
-#### Команды режима "->display->":
-Чтобы вернуться в основной режим сервера нужна команда ниже.
+#### Mode command "->display->":
+To return to the main server mode, you need the command below.
 ```
 ->display->exit
 ```
-Для просмотра комнаты №i = 1..50 используется следующая команда:
+To observe the room №i = 1..50 use the following command:
 ```
 ->display->room -n i
 ```
 
 ### Client
-#### Для запуска клиента
-По умолчанию клиент запускается на адресе "127.0.0.1" с портом "3425". Для запуска под другими воспользуйтесь аргументами командной строки. Для запуска только консольной версиии(без sdl) воспользуйтесь аргументом [-T]. [-t] запуск смешаного режима.
+#### To start the client
+By default client launches on address "127.0.0.1" with port "3425". To launch on another address use arguments [-p port] and [-a address] for changing the port and address respectively. To launch only a console version(without sdl) use an argument [-T]. Argument [-t] is for mixed mode(console + sdl).
+
 ```
 ~PokerRoom/bin $ ./client [-T] [-t] [-p port] [-a address]
 ```
 
-Клиент имеет два режима --- графический и консольный режим.
+Client has two modes: graphic and console.
 
-По умолчанию запускается графический режим.
+By default grafic mode starts. 
 
-#### Команды клиента "->":
+#### Client commands "->":
 ##### menu:
 ```
 ->menu->
 ```
-После подключеня к серверу вы перенаправляетесь в меню. Из меню вы можете перейти в саму игру(введя game в консоли или же нажав на кнопку game в графическом интерфейсе), также можете перейти в помощь(введя help в консоли или же нажав на кнопку help в графическом интерфейсе). Чтобы выйти из клииента введите или нажмите "exit".
-Также присутствуют подсказки при двойном нажатии клавиши "tab".
+After connecting to server you will be redirrected to menu. From menu you can start the game (typing "game" in the console or by clicking on the "game" button in the graphical interface), also you can go to help (typing "help" in the console or by clicking on the "help" button in the graphical interface). To exit the client press "exit". Also, you can see all the existing commands using double 'tab'.
+
 ##### help:
 ```
 ->help->
 ```
-Из вкладки помощь вы можете перейти в саму меню(введя menu в консоли или же нажав на кнопку menu в графическом интерфейсе). Чтобы выйти из клиента введите или нажмите "exit".
-Также присутствуют подсказки при двойном нажатии клавиши "tab".
+
+From help you may go to menu (typing "menu" in the console or by clicking on the "menu" button in the graphical interface).
+To exit from client type "exit". Also, you can see all the existing commands using double 'tab'.
 ##### game:
 ```
 ->game->
 ```
+From game you may go to menu or help by clicking appropriate command. Also, there is "disconnect" command which allows you to leave the room, but you lose lose all current achievements.
+The game starts when 6 players start game.
+There 
 Из игры вы можете перейти в меню или помощь при нажатии или вводе соответсвующей команды. Также есть команда disconnect(после ввода вы покидаете комнату и теряете все текущие достижение).
 Игра начинается только после того, как в комнату зайдет 6 человек и начнут игру.
-В игре присутствует 3 стандратных действия:
-CALL(принять ставку)
+The game has 3 standard actions:
+
+CALL (to accept bet)
 ```
 ->game->call
 ```
-FOLD(сбрость карты)
+FOLD (to discard cards)
 ```
 ->game->fold
 ```
-RAISE(поднять ставку на "x" денег, в графическом моде используйте ползунок, в консольном моде введите число)
+RAISE (to raise bet for x currency units(use scroller in grafic inteface version))
 ```
 ->game->raise x
 ```
-Для большей информации перейдите в help.
+For more detail information go to help.
 
 ### Starter
-Для простоты, можно добавить в игру сразу несколько ботов, для этого используется команда ниже, где [-g] флаг нужен для того, чтобы боты сразу перешли в игру с меню. n --- это количество ботов. i = 1...4 --- это номер бота.
+For simplicity, you can invite bots to game by using the command below, where [-g] flag is for redirrecting bots to game immediately after creating them. "n" is the number of bots you want to create and "i" (i = 1...4) is the identificator of bot.
 ```
 ~PokerRoom/bin $ ./Poker n ./bot[i]_client [-g] [-p port] [-a address]
 ```
 ### Bots
 There are 4 types of bot. bot1 and bot2 are bots with gaming AI (if-bots), and bot3 and bot4 and neyral networks bots.
-Each of bots you can launch with comand (where 'i' - is a number of bot i = 1...4)
+Each of bots you can launch with command (where 'i' - is a number of bot i = 1...4)
 ```
 ~project/bin $ ./bot'i'_client [-g]
 ``` 

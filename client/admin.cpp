@@ -191,6 +191,7 @@ whil:
 static const char *newEnv[] = {
 	"exit",
 	"room",
+	"delroom",
 	"restart",
 	"kill",
 	"showclient",
@@ -229,6 +230,7 @@ static void* admin_menu_scanf(void* arguments){
 	char * buf = NULL;
 
 	struct recvsock_admin rec;
+	set_statistick_table_t(&(rec.stat));
 
 	while(1){
 		if(buf != NULL){
@@ -251,8 +253,10 @@ static void* admin_menu_scanf(void* arguments){
 		}else if(!strncmp(buf, "room", 4)){
 			rec.id = my->id;
 			send(my->sock, &rec, sizeof(rec), 0);
-		}
-		else if(!strncmp(buf, "restart", 7)){
+		}else if(!strncmp(buf, "delroom", 7)){
+			rec.id = my->id;
+			send(my->sock, &rec, sizeof(rec), 0);
+		}else if(!strncmp(buf, "restart", 7)){
 			rec.id = my->id;
 			send(my->sock, &rec, sizeof(rec), 0);
 		}else if(!strncmp(buf, "kill", 4)){

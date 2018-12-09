@@ -154,10 +154,8 @@ void* get_info_from_server(void* argv) {
   msg_from_serv.comand = 0;
 
   while (1) {
-    if (msgrcv(mds, (void*)(&msg_from_serv), sizeof(msg_from_serv),
-               FROM_SERVER_TO_TABLE + num, 0) == -1) {
-      log(cl->fd_poker_log, "msgrcv get_info_from_server: %s in room №%d\n",
-          strerror(errno), num);
+    if (msgrcv(mds, (void*)(&msg_from_serv), sizeof(msg_from_serv), FROM_SERVER_TO_TABLE + num, 0) == -1) {
+      log(cl->fd_poker_log, "msgrcv get_info_from_server: %s in room №%d\n", strerror(errno), num);
       goto out;
     }
     log(cl->fd_poker_log, "recive info from server - room %d\n", num);
@@ -244,8 +242,7 @@ void* poker(void* argumets) {
   ((struct get_info_from_server_argumets_t*)argv)->num = num;
   ((struct get_info_from_server_argumets_t*)argv)->cl = cl;
   ((struct get_info_from_server_argumets_t*)argv)->obj = &obj;
-  ((struct get_info_from_server_argumets_t*)argv)->mut =
-      &mut_get_info_from_client;
+  ((struct get_info_from_server_argumets_t*)argv)->mut = &mut_get_info_from_client;
   pthread_create(&(thread[0]), NULL, get_info_from_server, (void*)argv);
   pthread_join(thread[0], NULL);
 

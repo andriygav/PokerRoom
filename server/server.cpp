@@ -128,6 +128,7 @@ static int get_stat(struct statistick_table_t* stat, int num, struct table_t* tb
       j++;
     }
   }
+  close(fd);
 
   for(int i = 0; i<6; i++){
     stat->exist[i] = exist[i];
@@ -1052,7 +1053,7 @@ void* admin_get_info_from_admin(void* arguments){
 						}
 					}
 				}
-	    	}if(!strncmp(buf, "showclient", 10) && rec.id == *id){
+	    	}else if(!strncmp(buf, "showclient", 10) && rec.id == *id){
 				optind = 1;
 				optarg = NULL;
 				int opt = 0;
@@ -1079,7 +1080,7 @@ void* admin_get_info_from_admin(void* arguments){
 				  	set_statistick_table_t(&(rec.stat));
 					log(fd, "is send: %d\n", send(sock, &rec, sizeof(rec), 0));
 				}
-	    	}if(!strncmp(buf, "showstat", 8) && rec.id == *id){
+	    	}else if(!strncmp(buf, "showstat", 8) && rec.id == *id){
 	    		optind = 1;
 				optarg = NULL;
 				int opt = 0;
